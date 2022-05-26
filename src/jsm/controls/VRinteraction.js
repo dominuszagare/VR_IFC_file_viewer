@@ -25,6 +25,7 @@ import { GLTFLoader } from '../loaders/GLTFLoader.js';
 import { PainterTool } from './painterTool.js';
 import { ObjectSpawner } from './objectSpawner.js';
 import { TeleportTool } from './teleportTool.js';
+import { ObjectManipulator } from './objectManipulator.js';
 import { Utility } from '../utils/Utility.js';
 
 import interactiveObjectsModels from '../../models/gltf/cursor.glb';
@@ -76,7 +77,7 @@ class VRinteraction {
         this.pencilTool = new PainterTool(scene,this.interactiveObjectsGroup,MESHUI);
         this.teleporterTool = new TeleportTool(this.interactiveObjectsGroup,this.userGroup,this.ModelGroup,scene,MESHUI,this.groundPlane);
         this.objectSpawnerTool = new ObjectSpawner(this.ModelGroup,this.interactiveObjectsGroup,scene,MESHUI,this.groundPlane);
-        //TODO make a tool for moving objects in the scene
+        this.objectManipulatorTool = new ObjectManipulator(this.ModelGroup,this.interactiveObjectsGroup,scene,MESHUI,this.groundPlane);
         //TODO make a inspect and mesuring tool
 
         this.yojstickToolBase = new Mesh(new BoxGeometry(0.1, 0.1, 0.1), new MeshToonMaterial({ color: 0x440066 }));
@@ -191,22 +192,6 @@ class VRinteraction {
         this.controller2.add(line.clone());
     }
 
-
-    //TODO move to utlity.js
-    getCenterPoint(mesh) {
-        var middle = new Vector3();
-        var geometry = mesh.geometry;
-
-        geometry.computeBoundingBox();
-
-        middle.x = (geometry.boundingBox.max.x + geometry.boundingBox.min.x) / 2;
-        middle.y = (geometry.boundingBox.max.y + geometry.boundingBox.min.y) / 2;
-        middle.z = (geometry.boundingBox.max.z + geometry.boundingBox.min.z) / 2;
-
-        mesh.localToWorld(middle);
-        return middle;
-    }
-
     controlersSetBinds(controller1, controller2) {
         controller1.addEventListener('squeezestart', () => {
             this.squeezeStartController(controller1);
@@ -297,7 +282,6 @@ class VRinteraction {
             object.userData.returnTo = undefined;
             controller.userData.grippedObject = object;
 
-
             if (object.name == 'teleporter') {
                 object.userData.returnTo = object.parent; //save parent
                 object.setRotationFromQuaternion(controller.getWorldQuaternion(this.tempQuaternion));
@@ -306,7 +290,6 @@ class VRinteraction {
                 object.position.copy(controller.position);
                 controller.attach(object);
                 controller.userData.grippedTool = 0;
-                this.showHelperItmes(controller); //show relavant intems depending on context
             }
             if (object.name == 'pencil') {
                 object.userData.returnTo = object.parent; //save parent
@@ -347,6 +330,17 @@ class VRinteraction {
                 controller.attach(object);
                 controller.userData.grippedTool = 4;
             }
+            if (object.name == 'objectManipulator'){
+                object.userData.returnTo = object.parent; //save parent
+                object.setRotationFromQuaternion(controller.getWorldQuaternion(this.tempQuaternion));
+                this.tempQuaternion.copy(this.userGroup.quaternion);
+                object.applyQuaternion(this.tempQuaternion.invert()); //rotate to aling with local cordinates
+                object.position.copy(controller.position);
+                controller.attach(object);
+                controller.userData.grippedTool = 5;
+            }
+
+            this.showHelperItmes(controller); //show relavant intems depending on context
 
         }
         //console.log(controller); <--checking what data controler object holds
@@ -357,6 +351,9 @@ class VRinteraction {
         if (controller.userData.grippedTool == 0) {
             this.teleporterTool.toolShowHelperItems();
         }
+        if(controller.userData.grippedTool == 5){
+            this.objectManipulatorTool.toolShowHelperItems();
+        }
     }
     hideHelperItems(controller) {
         if (controller.userData.grippedTool == 0) {
@@ -364,6 +361,9 @@ class VRinteraction {
         }
         if (controller.userData.grippedTool == 4) {
             this.objectSpawnerTool.toolHideHelperItems();
+        }
+        if (controller.userData.grippedTool == 5) {
+            this.objectManipulatorTool.toolHideHelperItems();
         }
     }
 
@@ -395,6 +395,8 @@ class VRinteraction {
             this.yojstickControl.updatePivotPosition();
         } else if (controller.userData.grippedTool == 4) {
             this.objectSpawnerTool.toolAction();
+        } else if (controller.userData.grippedTool == 5) {
+            this.objectManipulatorTool.toolAction();
         }
     }
     toolActionOnSelectEnd(controller) {
@@ -426,6 +428,8 @@ class VRinteraction {
             this.yojstickToolHandle.position.copy(controller.position);
         } else if (controller.userData.grippedTool == 4) {
             this.objectSpawnerTool.toolAnimation(controller);
+        } else if (controller.userData.grippedTool == 5) {
+            this.objectManipulatorTool.toolAnimation(controller);
         }
     }
 

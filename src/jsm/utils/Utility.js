@@ -8,6 +8,21 @@ class Utility{
         this.preselectModel = { id: - 1};
 
     }
+
+    getCenterPoint(mesh) {
+        var middle = new Vector3();
+        var geometry = mesh.geometry;
+
+        geometry.computeBoundingBox();
+
+        middle.x = (geometry.boundingBox.max.x + geometry.boundingBox.min.x) / 2;
+        middle.y = (geometry.boundingBox.max.y + geometry.boundingBox.min.y) / 2;
+        middle.z = (geometry.boundingBox.max.z + geometry.boundingBox.min.z) / 2;
+
+        mesh.localToWorld(middle);
+        return middle;
+    }
+
     saveFile(strData, filename) {
         var link = document.createElement('a');
         if (typeof link.download === 'string') {

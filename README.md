@@ -5,13 +5,13 @@ while keeping it simple for new users. (limiting itself to ony two buttons per c
 ![interaction](./docImages/teleportAndSelection.png)
 ![screenshot](./docImages/com.oculus.browser-20220524-131953.jpg)
 aplication contained in doc/ folder can be embeded into a static website and dosen't need a instaliation of any other packages to work.
-Try it out on: https://dominuszagare.github.io/VR_IFC_file_virwer
+Try it out on: https://dominuszagare.github.io/VR_IFC_file_viewer/
 
 libraries used:
 - Threejs (OpenGl abstractions)
 - three-mesh-ui (Flexbox like UI in 3D)
-- GSAP (animation libary)
-
+- three-mesh-bvh (Bounding volume hierarchy for faster raycasting)
+- gsap (animation libary ?/ dosent work on ocolus browser /?)
 !Aplication was tested only on  Ocolus Quest other headsets may not work.
 It expects to find a least one controler with a trigger and grip button.
 
@@ -24,5 +24,5 @@ Todo
 - [x] drawing tool
 - [x] 3D UI 
 - [x] loading IFC models (small)
-- [ ] object manipulation
+- [x] object manipulation
 - [ ] object snaping
