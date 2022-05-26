@@ -8,7 +8,7 @@ module.exports = {
         main: path.resolve(__dirname, './src/mainVR.js'),
     },
     output: {
-        path: path.resolve(__dirname, 'doc'),
+        path: path.resolve(__dirname, 'docs'),
         filename: 'app.bundle.js',
         assetModuleFilename: '[name][ext]',
         clean: false,
@@ -17,7 +17,7 @@ module.exports = {
     
     devServer: {
         static: {
-            directory: path.join(__dirname, 'doc'),
+            directory: path.join(__dirname, 'docs'),
         },
         port: 7700,
         open: true,
