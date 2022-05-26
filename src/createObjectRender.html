@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
+        />
+        <title>TEST VR</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+            }
+            body {
+                overflow: hidden;
+            }
+        </style>
+
+        <script type="module">
+            import {
+                Scene,
+                PerspectiveCamera,
+                WebGLRenderer,
+                Vector3,
+                DirectionalLight,
+                Color,
+                AmbientLight,
+                BoxGeometry,
+                SphereGeometry,
+                MeshPhongMaterial,
+                Mesh,
+                Box3,
+            } from '../threejs/three.module.js';
+
+            var camera, scene, renderer;
+            var mesh;
+            var strDownloadMime = "image/octet-stream";
+
+            init();
+            renderer.render(scene, camera);
+            //animate();
+
+            function init() {
+                
+
+                document.getElementById("saveLink").addEventListener('click', saveAsImage);
+                renderer = new WebGLRenderer({
+                    preserveDrawingBuffer: true
+                });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                document.body.appendChild(renderer.domElement);
+
+                camera = new PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+                scene = new Scene();
+
+                var width = 300;
+                var height = 300;
+
+                camera.aspect = width / height;
+                camera.updateProjectionMatrix();
+                renderer.setSize(width, height);
+
+
+                var geometry = new BoxGeometry(1, 1, 1);
+                //var geometry = new SphereGeometry(12);
+                var material = new MeshPhongMaterial({color: 0x00ff00});
+                mesh = new Mesh(geometry, material);
+                scene.add(mesh);
+
+                var box = new Box3()
+                box.setFromObject(mesh);
+                var list = [];
+                list.push(box.max.x);
+                list.push(box.max.y);
+                list.push(box.max.z);
+                const max = Math.max(...list);
+                console.log(max)
+
+                camera.position.set(max*-2, max*2, max*-2);
+                camera.lookAt(mesh.position);
+
+                scene.background = new Color(0x282828);
+                const directionalLight1 = new DirectionalLight(0xffeeff, 0.8);
+                directionalLight1.position.set(1, 1, 1);
+                scene.add(directionalLight1);
+                const directionalLight2 = new DirectionalLight(0xffffff, 0.8);
+                directionalLight2.position.set(-1, 0.5, -1);
+                scene.add(directionalLight2);
+                const ambientLight = new AmbientLight(0xffffee, 0.25);
+                scene.add(ambientLight);
+
+            }
+
+
+            function animate() {
+
+                requestAnimationFrame(animate);
+
+                renderer.render(scene, camera);
+
+            }
+
+            function saveAsImage() {
+                var imgData, imgNode;
+
+                try {
+                    var strMime = "image/jpeg";
+                    imgData = renderer.domElement.toDataURL(strMime);
+
+                    saveFile(imgData.replace(strMime, strDownloadMime), "test.jpg");
+
+                } catch (e) {
+                    console.log(e);
+                    return;
+                }
+
+            }
+
+            var saveFile = function (strData, filename) {
+                var link = document.createElement('a');
+                if (typeof link.download === 'string') {
+                    document.body.appendChild(link); //Firefox requires the link to be in the body
+                    link.download = filename;
+                    link.href = strData;
+                    link.click();
+                    document.body.removeChild(link); //remove the link when done
+                } else {
+                    location.replace(uri);
+                }
+            }
+
+        </script>
+    </head>
+    <body>
+        <a href="#" id="saveLink">Save Frame</a>;
+
+    </body>
+</html>
