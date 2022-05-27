@@ -27,7 +27,7 @@ class ObjectSpawner {
 
         this.rotateSteps = [0.1,1,5,10,15,30,45,60,90];
         this.moveSteps = [0.001,0.01,0.1,1,10];
-        this.rotateStep = 15;
+        this.rotateStep = 90;
         this.moveStep = 0.1;
 
         this.objectBoundingBox = new Mesh(new BoxGeometry(0.1, 0.1, 0.1), new MeshLambertMaterial({ color: 0x0011A6, opacity: 0.2, transparent: true, side: DoubleSide }));
@@ -35,7 +35,7 @@ class ObjectSpawner {
         this.scene.add(this.objectModel);
         this.scene.add(this.objectBoundingBox);
         this.objectBoundingBox.visible = false;
-        this.spawnPosition = new Vector3(0,0,0);
+        this.objectBoundingBox.name = 'boundingBox';
 
         let testItem = {
             text: "cube", //item must have these properties 
@@ -167,7 +167,9 @@ class ObjectSpawner {
     showPlaceholder(poz){
         //show placeholder at ray intersection
         if(this.selectedObject){
+            
             this.objectModel.copy(this.selectedObject);
+
             this.objectModel.position.copy(poz);
             this.objectModel.translateX(this.offsetXtranslate);
             this.objectModel.translateY(this.offsetYtranslate)
@@ -177,25 +179,12 @@ class ObjectSpawner {
             this.objectModel.rotateY(this.offsetYrotate*Math.PI/180);
             this.objectModel.rotateZ(this.offsetZrotate*Math.PI/180);
 
-            this.spawnPosition.copy(poz);
-            //this.objectBoundingBox.translateZ((this.box.max.z - this.box.min.z)*0.5);
-            //this.objectBoundingBox.translateY((this.box.max.y - this.box.min.y)*0.5); //this asumes that object origin is on the graund
-            this.box.setFromObject(this.selectedObject);
+            this.box.setFromObject(this.objectModel);
             this.tempVec.copy(this.box.max)
             this.tempVec.add(this.box.min);
             this.tempVec.x *= 0.5; this.tempVec.y *= 0.5; this.tempVec.z *= 0.5;
-            this.tempVec.add(poz);
             this.objectBoundingBox.position.copy(this.tempVec);
-            this.objectBoundingBox.scale.set((this.box.max.x - this.box.min.x)*10.5, (this.box.max.y - this.box.min.y)*10.5, (this.box.max.z - this.box.min.z)*10.5);
-            
-            this.objectBoundingBox.translateX(this.offsetXtranslate);
-            this.objectBoundingBox.translateY(this.offsetYtranslate)
-            this.objectBoundingBox.translateZ(this.offsetZtranslate*-1)
-            //todo check if rotation order is correct
-            this.objectBoundingBox.quaternion.copy(this.selectedObject.quaternion);
-            this.objectBoundingBox.rotateX(this.offsetXrotate*Math.PI/180);
-            this.objectBoundingBox.rotateY(this.offsetYrotate*Math.PI/180);
-            this.objectBoundingBox.rotateZ(this.offsetZrotate*Math.PI/180);
+            this.objectBoundingBox.scale.set((this.box.max.x - this.box.min.x)*10, (this.box.max.y - this.box.min.y)*10, (this.box.max.z - this.box.min.z)*10);
 
             this.objectBoundingBox.visible = true;
             this.objectModel.visible = true;
@@ -230,17 +219,15 @@ class ObjectSpawner {
     toolAction(){
         if(this.selectedObject){
             let mesh = this.objectModel.clone();
-            let boundingBox = this.objectBoundingBox.clone();
-            boundingBox.name = "boundingBox";
-            boundingBox.visible = false;
-            mesh.add(boundingBox); //useful for later for quick raycasting when selection objects;
+            let box = this.objectBoundingBox.clone();
+            mesh.attach(box);
+            box.visible = false;
 
             if(mesh.material.emissive){
                 mesh.material.emissive.r = 0;
                 mesh.material.emissive.b = 0;
             }
             this.objects.add(mesh);
-            //mesh.position.copy(this.spawnPosition);
         }
     }
     toolHideHelperItems(){

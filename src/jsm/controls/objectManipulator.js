@@ -1,4 +1,4 @@
-import { Vector3, SphereGeometry, Plane, Raycaster, Line, BufferGeometry, Matrix4, Mesh, BoxGeometry,MeshLambertMaterial, DoubleSide } from "three";
+import { Vector3,Quaternion,Box3,SphereGeometry, Plane, Raycaster, Line, BufferGeometry, Matrix4, Mesh, BoxGeometry,MeshLambertMaterial, DoubleSide } from "three";
 
 import cubeThumbnailImage from "../../images/cubeThumbnail.jpg"
 import sphereThumbnailImage from "../../images/sphereThumbnail.png"
@@ -15,6 +15,8 @@ class ObjectManipulator {
         this.tempMatrix = new Matrix4();
         this.tempVec = new Vector3(0, 1, 0);
         this.tempVecP = new Vector3(0, 0, 0);
+        this.box = new Box3();
+        this.quaternion = new Quaternion();
 
         this.offsetXtranslate = 0;
         this.offsetYtranslate = 0;
@@ -25,11 +27,12 @@ class ObjectManipulator {
 
         this.rotateSteps = [0.1,1,5,10,15,30,45,60,90];
         this.moveSteps = [0.001,0.01,0.1,1,10];
-        this.rotateStep = 15;
+        this.rotateStep = 90;
         this.moveStep = 0.1;
 
         this.objectBoundingBox = undefined;
         this.objectModel = undefined;
+        this.pointedAtObject = undefined;
 
         this.toolMenuHandle = this.meshUI.createMenu(
             0.04, //height
@@ -143,63 +146,82 @@ class ObjectManipulator {
 
             let boundingBoxes = [];
             this.objects.children.forEach(element => {
-                if(this.objectBoundingBox != element) boundingBoxes.push(element.getObjectByName('boundingBox'));
+                if(this.objectModel != element){
+                    let box = element.getObjectByName('boundingBox');
+                    box.visible = true;
+                    boundingBoxes.push(box);
+                }
             });
-
 
             let found = this.raycaster.intersectObjects(boundingBoxes, false); //do not use recursion to check for intersection whith all children
             if(found.length > 0){
                 let intersaction = found[0];
-                intersaction.object.visible = true; //show the bounding box of the object
-                this.objectBoundingBox = intersaction.object;
-                //console.log(this.objectBoundingBox);
-
-                if(this.selectObject){
-                    this.objectModel = intersaction.object.parent
-                    this.objectModel.quaternion.set(0,0,0,1);
-                    this.objectModel.position.copy(intersaction.point);
-                    this.objectModel.translateX(this.offsetXtranslate);
-                    this.objectModel.translateY(this.offsetYtranslate)
-                    this.objectModel.translateZ(this.offsetZtranslate)
-                    //todo check if rotation order is correct
-                    this.objectModel.rotateX(this.offsetXrotate*Math.PI/180);
-                    this.objectModel.rotateY(this.offsetYrotate*Math.PI/180);
-                    this.objectModel.rotateZ(this.offsetZrotate*Math.PI/180);
-                }
-                    
+                this.tempVecP.copy(intersaction.point);
+                this.pointedAtObject = intersaction.object;
             }else{
                 this.tempVecP.set(0,50000,0);;
                 this.raycaster.ray.intersectPlane(this.groundPlane, this.tempVecP);
-                if(this.selectObject){
-                    this.objectModel.quaternion.set(0,0,0,1);
-                    this.objectModel.position.copy(this.tempVecP);
-                    this.objectModel.translateX(this.offsetXtranslate);
-                    this.objectModel.translateY(this.offsetYtranslate)
-                    this.objectModel.translateZ(this.offsetZtranslate)
-                    //todo check if rotation order is correct
-                    this.objectModel.rotateX(this.offsetXrotate*Math.PI/180);
-                    this.objectModel.rotateY(this.offsetYrotate*Math.PI/180);
-                    this.objectModel.rotateZ(this.offsetZrotate*Math.PI/180);
-                }
+                this.pointedAtObject = undefined;
+            }
+
+            this.line.visible = true;
+            this.line.scale.z = this.tempVecP.distanceTo(this.raycaster.ray.origin);
+
+            if(this.objectModel && this.objectBoundingBox){
+                this.scene.attach(this.objectBoundingBox);
+                this.objectModel.quaternion.set(0,0,0,1); //if ofset mode dont reset quaternion but set it to initial quaternion when object is selected
+                this.objectModel.position.copy(this.tempVecP);
+                this.objectModel.translateX(this.offsetXtranslate);
+                this.objectModel.translateY(this.offsetYtranslate)
+                this.objectModel.translateZ(this.offsetZtranslate)
+                //todo check if rotation order is correct
+                this.objectModel.rotateX(this.offsetXrotate*Math.PI/180);
+                this.objectModel.rotateY(this.offsetYrotate*Math.PI/180);
+                this.objectModel.rotateZ(this.offsetZrotate*Math.PI/180);
+
+                
+                this.box.setFromObject(this.objectModel);
+                this.tempVec.copy(this.box.max)
+                this.tempVec.add(this.box.min);
+                this.tempVec.x *= 0.5; this.tempVec.y *= 0.5; this.tempVec.z *= 0.5;
+                this.objectBoundingBox.position.copy(this.tempVec);
+                this.objectBoundingBox.scale.set((this.box.max.x - this.box.min.x)*10, (this.box.max.y - this.box.min.y)*10, (this.box.max.z - this.box.min.z)*10);
+                this.objectModel.attach(this.objectBoundingBox);
             }
         }
     }
     toolAction(){
-        if(this.objectBoundingBox && !(this.objectModel)){
+        if(this.selectObject == false && this.pointedAtObject){
             this.selectObject = true;
+            this.objectBoundingBox = this.pointedAtObject;
+            this.objectModel = this.pointedAtObject.parent;
+            this.pointedAtObject = undefined;
+            this.quaternion.copy(this.objectModel.quaternion);
         }else{
             this.objectModel = undefined;
+            this.objectBoundingBox = undefined;
+            this.objectModel = undefined;
             this.selectObject = false;
+            this.pointedAtObject = undefined;
         }
     }
     toolHideHelperItems(){
-        if(this.objectBoundingBox){this.objectBoundingBox.visible = false; this.objectBoundingBox = undefined;}
         this.line.visible = false;
+
+        this.objects.children.forEach(element => {
+            if(this.objectModel != element){
+                let box = element.getObjectByName('boundingBox');
+                box.visible = false;
+            }
+        });
     }
     toolShowHelperItems(){
+        /*
+        this.selectObject = false;
         this.objectBoundingBox = undefined;
         this.objectModel = undefined;
         this.line.visible = true;
+        */
     }
 }
 export{ObjectManipulator};
