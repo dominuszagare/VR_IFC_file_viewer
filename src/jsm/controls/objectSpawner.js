@@ -153,8 +153,6 @@ class ObjectSpawner {
         let line = new Line(new BufferGeometry().setFromPoints([new Vector3(0, 0, 0), new Vector3(0, 0, -1)]));
         line.name = 'line';
         line.scale.z = 1;
-        //this.mesh.add(line.clone());
-
     }
 
     addItem(item){
@@ -192,7 +190,6 @@ class ObjectSpawner {
     }
 
     toolAnimation(controller){
-        //this.frameCount++;
         if(controller.userData.select){
             this.toolHideHelperItems();
         }else{

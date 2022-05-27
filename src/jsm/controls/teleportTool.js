@@ -6,7 +6,6 @@ import { Vector3,
     Mesh, MeshLambertMaterial,LineBasicMaterial,
     AdditiveBlending} from "three";
 
-import {gsap} from "../utils/gsap-core.js";
 
 //contains all objects and logic for the teleport tool
 class TeleportTool {
@@ -150,8 +149,6 @@ class TeleportTool {
 
         controller.getWorldDirection(this.tempVec);
         this.tempVecV.set(this.tempVecV.x,0,this.tempVecV.z);
-        //this.tempQuaternion.copy(this.userGroup.quaternion);
-        //this.tempVecV.applyQuaternion(this.tempQuaternion);
         this.tempVecP2.set(0,1,0)
         let angle = 0;
         if(this.tempVecV.z == 0 && this.tempVecV.x > 0){angle = Math.PI*1.5;}
@@ -167,12 +164,8 @@ class TeleportTool {
     }
     toolAction(){
         //TODO teleport animation interpolate to new position
-        gsap.to(this.userGroup.position, {duration: 0.15, x: this.vrLocationMarker.position.x, y: this.vrLocationMarker.position.y, z: this.vrLocationMarker.position.z});
-        //gsap.to(this.userGroup.quaternion, {duration: 0.15, x: this.vrLocationMarker.quaternion.x, y: this.vrLocationMarker.quaternion.y, z: this.vrLocationMarker.quaternion.z, w: this.vrLocationMarker.quaternion.w});
-        setTimeout(() => {
-            this.userGroup.position.copy(this.vrLocationMarker.position);
-            //this.userGroup.quaternion.copy(this.vrLocationMarker.quaternion);
-        }, 160);
+
+        this.userGroup.position.copy(this.vrLocationMarker.position);
     }
 }
 export{TeleportTool};

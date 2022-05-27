@@ -40,6 +40,7 @@ module.exports = {
     plugins: [ new HtmlWebpackPlugin({
             title: "VR IFC file viewer",
             filename: "index.html",
+            langauge: "en",
         }),
     ],
 };

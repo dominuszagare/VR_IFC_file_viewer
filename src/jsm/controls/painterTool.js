@@ -67,14 +67,6 @@ class PainterTool{
             false, //is handle atached at the bottom
         );
 
-        /*
-        this.toolMenuHandle.userData.menu.add(
-            this.meshUI.addWideButton('DELETE ALL', 0.04, () => {
-                console.log('todo delete all painter meshes');
-            }),
-        );
-        */
-
         //TODO create better color and size selector
         this.selectorSize = this.meshUI.addSliderDiscrete(0.04,10,0.1,0.1,() => {
             let value = selectorSize.userData.value;
@@ -122,7 +114,7 @@ class PainterTool{
         this.toolActionEnd();
 
     }
-    toolAction(controller){
+    toolAction(){
         this.tempVec.setFromMatrixPosition(this.pivot.matrixWorld);
         this.painter.lineTo(this.tempVec);
         this.painter.update();
@@ -141,7 +133,6 @@ class PainterTool{
         }
         this.undoRedo.userData.value = this.strokeNum;
         this.undoRedo.userData.update();
-        //this.meshUI.update();
         console.log("new stroke", this.undoRedo.userData.value, this.strokeNum);
 
         //increase undoRedo index

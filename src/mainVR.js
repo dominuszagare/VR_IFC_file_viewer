@@ -25,9 +25,6 @@ import { GridHelper } from 'three';
 
 import downloadIconImage from './images/download.png';
 import exampleIFCFile from './models/ifc/test.ifc';
-//import exampleIFCFile2 from './models/ifc/Kitchen_Cabinets_FINSA_Pro-Base-unit-1200.ifc';
-//import exampleIFCFile3 from './models/ifc/Kitchen_Cabinets_FINSA_Pro-Base-Drawer-unit-800.ifc';
-//import exampleIFCfileIcon from './images/exampleIFCfile.png';
 
 
 /*
@@ -65,7 +62,6 @@ const gltfLoader = new GLTFLoader();
 const ifcLoader = new IFCLoader();
 ifcLoader.ifcManager.setWasmPath("./");
 const ifc = ifcLoader.ifcManager;
-const utility = new Utility();
 let meshUI = new MeshUI(freezeCamera, unfrezeCamera);
 OverlayScene.add(meshUI.point)
 
@@ -80,22 +76,18 @@ CameraControl.addEventListener('change', () => {
     if (!renderer.xr.isPresenting) camera.getWorldPosition(meshUI.camPoz);
 });
 
-window.addEventListener('pointerdown', () => {meshUI.onSelect(() => {});});
+window.addEventListener('pointerdown', () => {meshUI.onSelect();});
 window.addEventListener('pointerup', () => {meshUI.onRelese();});
-window.addEventListener('touchstart', () => {meshUI.onSelect(() => {});});
+window.addEventListener('touchstart', () => {meshUI.onSelect();});
 window.addEventListener('touchend', () => {meshUI.onRelese();});
 
 sceneInit(scene); //setup lighting and helper objects
 //setup VR interaction controls
 let VRinter = new VRinteraction(scene, camera, renderer, OverlayScene, meshUI);
-initUI(VRinter);
+initUI();
 
 let loadingFileIcon = meshUI.addSquareImageButton(0.7,"",downloadIconImage);
 loadingFileIcon.set({backgroundOpacity: 0.2, borderRadius: 0.05});
-
-
-//camera.add(loadingFileIcon);
-
 
 function sceneInit(objectGroup) {
     objectGroup.background = new Color(0xa0afa0);
@@ -127,10 +119,6 @@ function sceneInit(objectGroup) {
 let fileNumber = 0;
 let loadedModels = [];
 let counter1 = 0; 
-
-setTimeout(() => {
-    
-},100);
 
 //prevent default behavior like opening files in the browser
 ;['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -177,7 +165,7 @@ function uploadFile(file) {
 
 }
 
-function highlightIFCByRay(material, model, ifcModels, raycaster, scene) {
+function highlightIFCByRay(material, model, ifcModels, raycaster, _scene) {
     const found = raycaster.intersectObjects(ifcModels)[0];
     if (found) {
 
@@ -194,7 +182,7 @@ function highlightIFCByRay(material, model, ifcModels, raycaster, scene) {
             modelID: model.id,
             ids: [id],
             material: material,
-            scene: scene,
+            scene: _scene,
             removePrevious: true
         })
     } else {
@@ -299,7 +287,7 @@ function initUI() {
             };
             if (!renderer.xr.isPresenting) {
                 VRinter.raycaster.setFromCamera(mouse, camera);
-                meshUI.raycastGUIelements(VRinter.raycaster, () => {});
+                meshUI.raycastGUIelements(VRinter.raycaster);
                 return 0;
             }
             return 1;
@@ -362,18 +350,9 @@ document.addEventListener("DOMContentLoaded", ()=>{
     if(!(fileNumber)){
         fileNumber = 0;
         //add models to selection
-        //loadIFC('../models/ifc/rac_advanced_sample_project.ifc',"test",fileNumber);
         sessionStorage.setItem("recent-file-Data-URL-"+fileNumber, exampleIFCFile); //store
         sessionStorage.setItem("recent-file-name-"+fileNumber, "test");
         fileNumber += 1;
-        /*
-        sessionStorage.setItem("recent-file-Data-URL-"+fileNumber, exampleIFCFile2); //store
-        sessionStorage.setItem("recent-file-name-"+fileNumber, "test2");
-        fileNumber += 1;
-        sessionStorage.setItem("recent-file-Data-URL-"+fileNumber, exampleIFCFile3); //store
-        sessionStorage.setItem("recent-file-name-"+fileNumber, "test3");
-        fileNumber += 1;
-        */
 
         
     }
@@ -400,18 +379,6 @@ document.addEventListener("DOMContentLoaded", ()=>{
     //setup animation loop
     renderer.setAnimationLoop(function () {
 
-        //test utility functions
-        /*
-        if(counter1 > 6){
-            let nearbyObjects = utility.limitSelectionByDistance(this.userGroup.position,this.ModelGroup.children,5);
-            nearbyObjects.forEach(element => {
-                utility.highlightIFC()
-            });
-            counter1 = 0;
-        }else{counter1++;}
-        */
-
-
         VRinter.animate(clock);
         renderer.clear();
         renderer.render(scene, camera);
@@ -421,18 +388,5 @@ document.addEventListener("DOMContentLoaded", ()=>{
     setTimeout(()=>{VRinter.objectSpawnerTool.container.userData.update();},1000);
 
 });
-
-var saveFile = function (strData, filename) {
-    var link = document.createElement('a');
-    if (typeof link.download === 'string') {
-        document.body.appendChild(link); //Firefox requires the link to be in the body
-        link.download = filename;
-        link.href = strData;
-        link.click();
-        document.body.removeChild(link); //remove the link when done
-    } else {
-        location.replace(uri);
-    }
-}
 
 

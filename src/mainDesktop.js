@@ -60,17 +60,10 @@ let ToolMode = 0;
 let ManipulatedObject; //hranimo referenco na objekt ki ga manipuliramo
 let ManipulationToolFlags = 0;
 
-async function loadIFC(filepath) {
-}
-
 function render() {
-    //menu1.translateX(0.000);
-    //menu1Handle.rotateZ(0.2);
+
     GUI_Group.position.copy(currentCamera.position);
-    //currentCamera.getWorldDirection(tempVector);
-    //GUI_elements.position.copy(tempVector);
     GUI_Group.setRotationFromQuaternion(currentCamera.quaternion);
-    //GUI_elements.lookAt(currentCamera.position);
 
     meshUI.update();
     renderer.clear();
@@ -125,9 +118,6 @@ function init() {
     const grid = new InfiniteGridHelper(10, 100);
     scene.add(grid);
     scene.add(arrowHelper);
-    //scene.add( arrowHelperX );
-    //scene.add( arrowHelperY );
-    //scene.add( arrowHelperZ );
     scene.add(userInteractiveObjects);
 
     //interactive objects
@@ -241,12 +231,6 @@ function onMouseMove(event) {
 
     raycaster.setFromCamera(mouse, currentCamera);
     meshUI.raycastGUIelements(raycaster, render);
-
-    //currentCamera.camera.getWorldPosition(meshUI.camPoz);
-
-    //meshUI.planeNormal.dot(currentCamera.up);
-    //meshUI.planeNormal.cross(currentCamera.up);
-    //meshUI.planeNormal.copy(currentCamera.position);
 
     if (MouseDown) {
         return 1;

@@ -125,7 +125,6 @@ class VRinteraction {
         
         setTimeout(() => { //update UI after the scene is loaded
             this.meshUI.update();
-            //this.userGroup.rotateY(Math.PI/2); //roate user group
         }, 1000)
     }
 
@@ -144,8 +143,6 @@ class VRinteraction {
         let marker2 = this.objCursorRing;
         let marker3 = this.objCursor;
         this.gltfLoader.load(interactiveObjectsModels,function (gltf) {
-                //console.log(gltf);
-                //console.log(teleportTool);
                 teleportTool.geometry.copy(gltf.scene.children[4].geometry);
                 pencilTool.geometry.copy(gltf.scene.children[5].geometry);
                 locationMarker.geometry.copy(gltf.scene.children[2].geometry);
@@ -222,7 +219,7 @@ class VRinteraction {
         controller.userData.squeeze = true;
         this.gripObject(controller);
         if (this.activeControler == controller) {
-            this.meshUI.onSelectAlternative(() => {}); //<--preform button alternative function if howering over one
+            this.meshUI.onSelectAlternative(); //<--preform button alternative function if howering over one
         }
         //switch active controller
         if (controller.userData.grippedObject == undefined) {
@@ -244,7 +241,7 @@ class VRinteraction {
             this.toolActionOnSelect(controller);
         }
         if (this.activeControler == controller) {
-            this.meshUI.onSelect(() => {}); //<--preform button function if howering over one
+            this.meshUI.onSelect(); //<--preform button function if howering over one
         }
         //switch active controller
         if (controller.userData.grippedObject == undefined) {
@@ -257,7 +254,7 @@ class VRinteraction {
     selectEndController(controller) {
         controller.userData.select = false;
         if (this.activeControler == controller) {
-            this.meshUI.onRelese(() => {});
+            this.meshUI.onRelese();
         }
         if (controller.userData.grippedObject != undefined) {
             this.toolActionOnSelectEnd(controller);
@@ -281,63 +278,68 @@ class VRinteraction {
 
             object.userData.returnTo = undefined;
             controller.userData.grippedObject = object;
-
-            if (object.name == 'teleporter') {
-                object.userData.returnTo = object.parent; //save parent
-                object.setRotationFromQuaternion(controller.getWorldQuaternion(this.tempQuaternion));
-                this.tempQuaternion.copy(this.userGroup.quaternion);
-                object.applyQuaternion(this.tempQuaternion.invert()); //rotate to aling with local cordinates
-                object.position.copy(controller.position);
-                controller.attach(object);
-                controller.userData.grippedTool = 0;
-            }
-            if (object.name == 'pencil') {
-                object.userData.returnTo = object.parent; //save parent
-                object.setRotationFromQuaternion(controller.getWorldQuaternion(this.tempQuaternion));
-                this.tempQuaternion.copy(this.userGroup.quaternion);
-                object.applyQuaternion(this.tempQuaternion.invert()); //rotate to aling with local cordinates
-                object.position.copy(controller.position);
-                controller.attach(object);
-                controller.userData.grippedTool = 1;
-            }
-            if (object.name == 'yojstickBase') {
-                object.position.copy(controller.position);
-                object.userData.returnTo = object.parent; //save parent
-                this.yojstickControl.position.copy(this.yojstickToolBase.position);
-                this.yojstickControl.position.y += 0.1;
-                controller.attach(object);
-                controller.attach(this.yojstickControl);
-                controller.userData.grippedTool = 2;
-            }
-            if (object.name == 'yojstickControl') {
-                controller.getWorldPosition(this.tempVecP);
-                object.getWorldPosition(this.tempVecP2);
-                this.tempVecP.sub(this.tempVecP2);
-                if(this.tempVecP.length() < 0.06){
+            switch (object.name) {
+                case 'teleporter':
+                    object.userData.returnTo = object.parent; //save parent
+                    object.setRotationFromQuaternion(controller.getWorldQuaternion(this.tempQuaternion));
+                    this.tempQuaternion.copy(this.userGroup.quaternion);
+                    object.applyQuaternion(this.tempQuaternion.invert()); //rotate to aling with local cordinates
+                    object.position.copy(controller.position);
+                    controller.attach(object);
+                    controller.userData.grippedTool = 0;
+                    break;
+                case 'pencil':
+                    object.userData.returnTo = object.parent; //save parent
+                    object.setRotationFromQuaternion(controller.getWorldQuaternion(this.tempQuaternion));
+                    this.tempQuaternion.copy(this.userGroup.quaternion);
+                    object.applyQuaternion(this.tempQuaternion.invert()); //rotate to aling with local cordinates
+                    object.position.copy(controller.position);
+                    controller.attach(object);
+                    controller.userData.grippedTool = 1;
+                    break;
+                case 'yojstickBase':
                     object.position.copy(controller.position);
                     object.userData.returnTo = object.parent; //save parent
+                    this.yojstickControl.position.copy(this.yojstickToolBase.position);
+                    this.yojstickControl.position.y += 0.1;
                     controller.attach(object);
-                    controller.userData.grippedTool = 3;
-                }
-            }
-            if (object.name == 'objectSpawner') {
-                object.userData.returnTo = object.parent; //save parent
-                object.setRotationFromQuaternion(controller.getWorldQuaternion(this.tempQuaternion));
-                this.tempQuaternion.copy(this.userGroup.quaternion);
-                object.applyQuaternion(this.tempQuaternion.invert()); //rotate to aling with local cordinates
-                object.position.copy(controller.position);
-                
-                controller.attach(object);
-                controller.userData.grippedTool = 4;
-            }
-            if (object.name == 'objectManipulator'){
-                object.userData.returnTo = object.parent; //save parent
-                object.setRotationFromQuaternion(controller.getWorldQuaternion(this.tempQuaternion));
-                this.tempQuaternion.copy(this.userGroup.quaternion);
-                object.applyQuaternion(this.tempQuaternion.invert()); //rotate to aling with local cordinates
-                object.position.copy(controller.position);
-                controller.attach(object);
-                controller.userData.grippedTool = 5;
+                    controller.attach(this.yojstickControl);
+                    controller.userData.grippedTool = 2;
+                    break;
+                case 'yojstickControl':
+                    controller.getWorldPosition(this.tempVecP);
+                    object.getWorldPosition(this.tempVecP2);
+                    this.tempVecP.sub(this.tempVecP2);
+                    if(this.tempVecP.length() < 0.06){
+                        object.position.copy(controller.position);
+                        object.userData.returnTo = object.parent; //save parent
+                        controller.attach(object);
+                        controller.userData.grippedTool = 3;
+                    }
+                    break;
+                case 'objectSpawner':
+                    object.userData.returnTo = object.parent; //save parent
+                    object.setRotationFromQuaternion(controller.getWorldQuaternion(this.tempQuaternion));
+                    this.tempQuaternion.copy(this.userGroup.quaternion);
+                    object.applyQuaternion(this.tempQuaternion.invert()); //rotate to aling with local cordinates
+                    object.position.copy(controller.position);
+                    
+                    controller.attach(object);
+                    controller.userData.grippedTool = 4;
+                    break;
+                case 'objectManipulator':
+                    object.userData.returnTo = object.parent; //save parent
+                    object.setRotationFromQuaternion(controller.getWorldQuaternion(this.tempQuaternion));
+                    this.tempQuaternion.copy(this.userGroup.quaternion);
+                    object.applyQuaternion(this.tempQuaternion.invert()); //rotate to aling with local cordinates
+                    object.position.copy(controller.position);
+                    controller.attach(object);
+                    controller.userData.grippedTool = 5;
+                    break;
+
+            
+                default:
+                    break;
             }
 
             this.showHelperItmes(controller); //show relavant intems depending on context
@@ -407,7 +409,7 @@ class VRinteraction {
     handleToolsAnimations(controller) {
         //will execute each frame (be cerful to not perform expensive operations)
         if (controller.userData.grippedTool == 1 && controller.userData.select) {//when controler triger is pressed and pencil is gripped
-            this.pencilTool.toolAction(controller);
+            this.pencilTool.toolAction();
         } else if (controller.userData.grippedTool == 0) { //when griping teleporter recalculate the arc
             this.teleporterTool.toolAnimation(controller);
         }
@@ -456,7 +458,7 @@ class VRinteraction {
             this.raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
             this.raycaster.ray.direction.set(0, 0, -1).applyMatrix4(this.tempMatrix);
 
-            this.meshUI.raycastGUIelements(this.raycaster, () => {}); //check if the raycast hits any gui elements
+            this.meshUI.raycastGUIelements(this.raycaster); //check if the raycast hits any gui elements
 
             found = this.raycaster.intersectObjects(group.children, false); //do not use recursion to check for children of group.children
         }
@@ -502,33 +504,10 @@ class VRinteraction {
 
             this.handleToolsAnimations(this.controller1);
             this.handleToolsAnimations(this.controller2);
-
-            //TODO do inly if a controler holds an scale orb
-            if (this.controller1.userData.select && this.controller2.userData.select && false) {
-                if (this.tempDistance == -1) {
-                    this.tempDistance = this.controller1.position.distanceTo(this.controller2.position);
-                    this.tempPoz1.copy(this.userGroup.position);
-                    this.tempPoz1.add(this.userHeight); //add user hight to userPosition so it never zero
-                } else {
-                    const scale = this.tempDistance / this.controller1.position.distanceTo(this.controller2.position); //define scale on changed proportion betwen start lenght anf current lenght
-                    this.tempPoz2.copy(this.tempPoz1);
-                    this.tempPoz2.y = this.tempPoz2.y * scale;
-                    this.tempPoz2.sub(this.userHeight);
-                    if (this.tempPoz2.y < -1.9) {
-                        this.tempPoz2.y = -1.9;
-                    } // 2 -1.9 = 0.1 limit so we dont get negative y position thath would scale downwards
-                    if (this.tempPoz2.y > 600) {
-                        this.tempPoz2.y = 600;
-                    }
-                    this.userGroup.position.copy(this.tempPoz2);
-                }
-            } else {
-                this.tempDistance = -1;
-            }
         }
 
         const delta = clock.getDelta();
-        let camera = this.camera; //this.XR.getCamera(this.camera);
+        let camera = this.camera;
         if (this.loadingObjectPlaceholder.visible) {
             this.loadingObjectPlaceholder.rotation.x += delta * 0.5;
             this.loadingObjectPlaceholder.rotation.y += delta * 0.2;

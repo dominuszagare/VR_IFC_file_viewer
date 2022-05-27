@@ -151,7 +151,7 @@ class MeshUI {
     //TODO crete rotation gizmo ui
 
     //TODO create a continuos non discrete version that can be horizontal or vertical
-    addSliderDiscrete(height, max, min, step, onChange = undefined, describe = "", percision = 2) {
+    addSliderDiscrete(height, max, min, step, onChange = undefined, _describe = "", percision = 2) {
         let fontSize = height / 2;
         let margin = height / 20;
         let borderRadius = height / 6;
@@ -166,8 +166,8 @@ class MeshUI {
             justifyContent: 'center',
             offset: 0.0001,
         });
-        slider.userData.text = new ThreeMeshUI.Text({ content: describe, offset: 0.001 });
-        slider.userData.describe = describe;
+        slider.userData.text = new ThreeMeshUI.Text({ content: _describe, offset: 0.001 });
+        slider.userData.describe = _describe;
         slider.userData.max = max;
         slider.userData.min = min;
         slider.userData.step = step;
@@ -230,7 +230,7 @@ class MeshUI {
             grabHandleButton.setupState(this.hoveredStateAttributes);
             grabHandleButton.setupState(this.idleStateAttributes);
             grabHandleButton.setupState(this.pressedStateAttributes);
-            //grabHandleButton.userData.offset = new Vector3(0,0,0); //position relative to parent (local position)
+            
             grabHandleButton.name = 'menuHandle';
             grabHandleButton.frame.userData.button = grabHandleButton;
             grabHandleButton.frame.userData.reorient = reorient;
@@ -326,7 +326,6 @@ class MeshUI {
         var y =  0;
         var row = 0;
         var Offset = 0;
-        var numInRow = 0;
         var buttons = [];
 
         let selector = this.addSliderDiscrete(height,0,0,1,() => {
@@ -364,7 +363,6 @@ class MeshUI {
             if(x*itemWidth + itemWidth > width){
                 y -= itemWidth;
                 if(row == rows-1){Offset += x; y = 0;}
-                numInRow = x;
                 x = 0;
                 row += 1;
             }
@@ -414,7 +412,7 @@ class MeshUI {
         this.frezeCam();
     }
     //raycast GUI elements and execute draging, howering, and clicking logic
-    raycastGUIelements(raycaster, renderFunction) {
+    raycastGUIelements(raycaster, renderFunction=undefined) {
         //clean up elements
         if (this.HighlitedGUIelements.length > 0) {
             let object = this.HighlitedGUIelements.pop();
@@ -424,18 +422,16 @@ class MeshUI {
                 object.userData.button.setState('idle');
             }
             ThreeMeshUI.update();
-            renderFunction(); //usaly requset a new frame to make changes visible
+            if(renderFunction)renderFunction(); //usaly requset a new frame to make changes visible
         }
         if (this.HighlitedGUIelements.length == 0) {
             this.HoveredGUIobject = undefined;
         }
 
         if (this.DragedGUIobject != undefined) {
-            //console.log('dragging'); //try keeping object distance
             
             this.tempVec3P.copy(raycaster.ray.origin); //origin is in world cordinates
             this.tempVec3.copy(raycaster.ray.direction);
-            //var distance = 3;
             this.tempVec3.x *= this.uiDistance;
             this.tempVec3.y *= this.uiDistance;
             this.tempVec3.z *= this.uiDistance;
@@ -448,7 +444,6 @@ class MeshUI {
                 this.tempVec3P.applyQuaternion(this.tempQuaternion.invert()); //rotate vector to aling with local cordinates
                 this.DragedGUIobject.position.copy(this.tempVec3P);
 
-                //this.DragedGUIobject.lookAt(); //if atached to cam do not use look at
                 if (this.DragedGUIobject.frame.userData.reorient) {
                     //reorient the object so its loking to the ray origin
                     this.DragedGUIobject.lookAt(raycaster.ray.origin);
@@ -482,7 +477,6 @@ class MeshUI {
                     this.point.visible = true;
                     if (object.userData.button != undefined) {
                         if (this.HoveredGUIobject != object) {
-                            //this.lastNormal = ui[0].face.normal;
                             object.userData.button.setState('hovered');
                             this.HoveredGUIobject = object;
                             this.HighlitedGUIelements.push(object);
@@ -498,7 +492,7 @@ class MeshUI {
         }
     }
     //ob pritisku gumba izvedi funkcijo gumba nad katerim smo
-    onSelect(renderFunction) {
+    onSelect(renderFunction = undefined) {
         this.point.visible = false;
         if (this.HoveredGUIobject != undefined) {
             this.HoveredGUIobject.userData.button.setState('pressed');
@@ -511,10 +505,10 @@ class MeshUI {
                 this.HoveredGUIobject.userData.on = true;
             }
             ThreeMeshUI.update();
-            renderFunction(); //show changes
+            if(renderFunction)renderFunction(); //show changes
         }
     }
-    onSelectAlternative(renderFunction){
+    onSelectAlternative(renderFunction = undefined) {
         this.point.visible = false;
         if (this.HoveredGUIobject != undefined) {
             this.HoveredGUIobject.userData.button.setState('pressed');
@@ -527,7 +521,7 @@ class MeshUI {
                 this.HoveredGUIobject.userData.on = true;
             }
             ThreeMeshUI.update();
-            renderFunction(); //show changes
+            if(renderFunction)renderFunction(); //show changes
         }
     }
     onRelese() {

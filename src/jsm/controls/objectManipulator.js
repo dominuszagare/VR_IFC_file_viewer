@@ -136,7 +136,6 @@ class ObjectManipulator {
         
 
     toolAnimation(controller){
-        //this.frameCount++;
         if(controller.userData.select){
             this.toolHideHelperItems();
         }else{
@@ -216,12 +215,7 @@ class ObjectManipulator {
         });
     }
     toolShowHelperItems(){
-        /*
-        this.selectObject = false;
-        this.objectBoundingBox = undefined;
-        this.objectModel = undefined;
         this.line.visible = true;
-        */
     }
 }
 export{ObjectManipulator};
