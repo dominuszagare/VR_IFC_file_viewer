@@ -155,7 +155,6 @@ class TeleportTool {
         else if(this.tempVecV.z == 0 && this.tempVecV.x < 0){angle = Math.PI/2;}
         else if(this.tempVecV.z < 0 && this.tempVecV.x < 0){angle = Math.atan(this.tempVecV.x/this.tempVecV.z)-Math.PI}
         else if(this.tempVecV.z > 0 && this.tempVecV.x > 0){angle = Math.atan(this.tempVecV.x/this.tempVecV.z)}
-        else if(this.tempVecV.x == 0 && this.tempVecV.z > 0){angle = 0}
         else if(this.tempVecV.x == 0 && this.tempVecV.z < 0){angle = Math.PI}
         else if(this.tempVecV.z > 0 && this.tempVecV.x < 0){angle = Math.atan(this.tempVecV.z/(this.tempVecV.x*-1))-Math.PI/2}
         else if(this.tempVecV.z < 0 && this.tempVecV.x > 0){angle = Math.atan((this.tempVecV.z*-1)/this.tempVecV.x)+Math.PI/2}

@@ -48,17 +48,17 @@ class ObjectManipulator {
         this.toolMenuHandle.userData.menu.add(moveButton);
         moveButton.position.set(0,-0.02,0);
 
-        this.selectorOffsetXtranslation = this.meshUI.addSliderDiscrete(0.04,100,-100,this.moveStep,() => {this.offsetXtranslate = this.selectorOffsetXtranslation.userData.value;},"",3);
+        this.selectorOffsetXtranslation = this.meshUI.addSliderDiscrete(0.04,100,-100,this.moveStep,() => {this.offsetXtranslate = this.selectorOffsetXtranslation.userData.value; this.moveObject();},"",3);
         this.selectorOffsetXtranslation.userData.value = 0; this.selectorOffsetXtranslation.userData.update(); this.selectorOffsetXtranslation.autoLayout = false;
         this.toolMenuHandle.userData.menu.add(this.selectorOffsetXtranslation);
         this.selectorOffsetXtranslation.position.set(0,-0.06,0);
 
-        this.selectorOffsetYtranslation = this.meshUI.addSliderDiscrete(0.04,100,-100,this.moveStep,() => {this.offsetYtranslate = this.selectorOffsetYtranslation.userData.value;},"",3);
+        this.selectorOffsetYtranslation = this.meshUI.addSliderDiscrete(0.04,100,-100,this.moveStep,() => {this.offsetYtranslate = this.selectorOffsetYtranslation.userData.value; this.moveObject();},"",3);
         this.selectorOffsetYtranslation.userData.value = 0; this.selectorOffsetXtranslation.userData.update(); this.selectorOffsetYtranslation.autoLayout = false;
         this.toolMenuHandle.userData.menu.add(this.selectorOffsetYtranslation);
         this.selectorOffsetYtranslation.position.set(0,-0.1,0);
 
-        this.selectorOffsetZtranslation = this.meshUI.addSliderDiscrete(0.04,100,-100,this.moveStep,() => {this.offsetZtranslate = this.selectorOffsetZtranslation.userData.value;},"",3);
+        this.selectorOffsetZtranslation = this.meshUI.addSliderDiscrete(0.04,100,-100,this.moveStep,() => {this.offsetZtranslate = this.selectorOffsetZtranslation.userData.value; this.moveObject();},"",3);
         this.selectorOffsetZtranslation.userData.value = 0; this.selectorOffsetZtranslation.userData.update(); this.selectorOffsetZtranslation.autoLayout = false;
         this.toolMenuHandle.userData.menu.add(this.selectorOffsetZtranslation);
         this.selectorOffsetZtranslation.position.set(0,-0.14,0);
@@ -79,22 +79,42 @@ class ObjectManipulator {
         this.toolMenuHandle.userData.menu.add(this.selectorTranslateStep);
         this.selectorTranslateStep.position.set(0,-0.18,0);
 
+        const resetTranslationRotation = this.meshUI.addWideButton('RESET TO 0', 0.04, () => {
+            this.offsetXtranslate = 0;
+            this.offsetYtranslate = 0;
+            this.offsetZtranslate = 0;
+            this.offsetXrotate = 0;
+            this.offsetYrotate = 0;
+            this.offsetZrotate = 0;
+            this.selectorOffsetXtranslation.userData.value = 0; this.selectorOffsetXtranslation.userData.update();
+            this.selectorOffsetYtranslation.userData.value = 0; this.selectorOffsetYtranslation.userData.update();
+            this.selectorOffsetZtranslation.userData.value = 0; this.selectorOffsetZtranslation.userData.update();
+            this.selectorOffsetXrotate.userData.value = 0; this.selectorOffsetXrotate.userData.update();
+            this.selectorOffsetYrotate.userData.value = 0; this.selectorOffsetYrotate.userData.update();
+            this.selectorOffsetZrotate.userData.value = 0; this.selectorOffsetZrotate.userData.update();
+            this.moveObject();
+        });
+
+        resetTranslationRotation.autoLayout = false;
+        this.toolMenuHandle.userData.menu.add(resetTranslationRotation);
+        resetTranslationRotation.position.set(0,-0.22,0);
+
         const rotateButton = this.meshUI.addWideButton('ROTATE XYZ', 0.04);
         rotateButton.autoLayout = false;
         this.toolMenuHandle.userData.menu.add(rotateButton);
         rotateButton.position.set(-0.04*4.2,-0.02,0);
 
-        this.selectorOffsetXrotate= this.meshUI.addSliderDiscrete(0.04,1800,-1800,this.rotateStep,() => {this.offsetXrotate = this.selectorOffsetXrotate.userData.value;},"",1);
+        this.selectorOffsetXrotate= this.meshUI.addSliderDiscrete(0.04,1800,-1800,this.rotateStep,() => {this.offsetXrotate = this.selectorOffsetXrotate.userData.value; this.moveObject();},"",1);
         this.selectorOffsetXrotate.userData.value = 0; this.selectorOffsetXrotate.userData.update(); this.selectorOffsetXrotate.autoLayout = false;
         this.toolMenuHandle.userData.menu.add(this.selectorOffsetXrotate);
         this.selectorOffsetXrotate.position.set(-0.04*4.2,-0.06,0);
 
-        this.selectorOffsetYrotate= this.meshUI.addSliderDiscrete(0.04,1800,-1800,this.rotateStep,() => {this.offsetYrotate = this.selectorOffsetYrotate.userData.value;},"",1);
+        this.selectorOffsetYrotate= this.meshUI.addSliderDiscrete(0.04,1800,-1800,this.rotateStep,() => {this.offsetYrotate = this.selectorOffsetYrotate.userData.value; this.moveObject();},"",1);
         this.selectorOffsetYrotate.userData.value = 0; this.selectorOffsetYrotate.userData.update(); this.selectorOffsetYrotate.autoLayout = false;
         this.toolMenuHandle.userData.menu.add(this.selectorOffsetYrotate);
         this.selectorOffsetYrotate.position.set(-0.04*4.2,-0.1,0);
 
-        this.selectorOffsetZrotate = this.meshUI.addSliderDiscrete(0.04,1800,-1800,this.rotateStep,() => {this.offsetZrotate = this.selectorOffsetZrotate.userData.value;},"",1);
+        this.selectorOffsetZrotate = this.meshUI.addSliderDiscrete(0.04,1800,-1800,this.rotateStep,() => {this.offsetZrotate = this.selectorOffsetZrotate.userData.value; this.moveObject();},"",1);
         this.selectorOffsetZrotate.userData.value = 0; this.selectorOffsetZrotate.userData.update(); this.selectorOffsetZrotate.autoLayout = false;
         this.toolMenuHandle.userData.menu.add(this.selectorOffsetZrotate);
         this.selectorOffsetZrotate.position.set(-0.04*4.2,-0.14,0);
@@ -114,17 +134,32 @@ class ObjectManipulator {
         this.toolMenuHandle.userData.menu.add(this.selectorRotateStep);
         this.selectorRotateStep.position.set(-0.04*4.2,-0.18,0);
 
+        this.confirmButton = this.meshUI.addWideButton('CONFIRM', 0.04, () => {this.objectBoundingBox.visible = false; this.toolAction();});
+        this.confirmButton.autoLayout = false;
+        this.toolMenuHandle.userData.menu.add(this.confirmButton);
+        this.confirmButton.position.set(-0.04*4.2,-0.22,0);
 
-        
-        this.toolMenuHandle.position.x = -0.14;
-        this.toolMenuHandle.position.y = 0.05;
+        const deleteButton = this.meshUI.addWideButton('DELETE', 0.04, () => {
+            if(this.objectBoundingBox && this.objectModel){
+                this.objects.remove(this.objectModel);
+                this.objectBoundingBox = undefined;
+                this.objectModel = undefined;
+                this.objectSelected = false;
+            }
+        });
+        deleteButton.autoLayout = false;
+        this.toolMenuHandle.userData.menu.add(deleteButton);
+        deleteButton.position.set(0,-0.26,0);
+
+        //define menu handle position
+        this.toolMenuHandle.position.set(-0.14,0.05,0);
         this.mesh.userData.UI = this.toolMenuHandle;
         this.mesh.add(this.toolMenuHandle);
         this.mesh.position.set(1.2, 1.5, -1);
         this.mesh.name = 'objectManipulator';
         toolGroup.add(this.mesh);
 
-        this.selectObject = false;
+        this.objectSelected = false;
 
         this.line = new Line(new BufferGeometry().setFromPoints([new Vector3(0, 0, 0), new Vector3(0, 0, -1)]));
         this.line.name = 'line';
@@ -133,65 +168,64 @@ class ObjectManipulator {
 
     }
 
-        
-
     toolAnimation(controller){
-        if(controller.userData.select){
-            this.toolHideHelperItems();
+        this.tempMatrix.identity().extractRotation(controller.matrixWorld); //shoot a ray from a controller and find if it intersacts with a interactable object
+        this.raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
+        this.raycaster.ray.direction.set(0, 0, -1).applyMatrix4(this.tempMatrix);
+
+        let boundingBoxes = [];
+        this.objects.children.forEach(element => {
+            if(this.objectModel != element){
+                let box = element.getObjectByName('boundingBox');
+                box.visible = true;
+                boundingBoxes.push(box);
+            }
+        });
+
+        let found = this.raycaster.intersectObjects(boundingBoxes, false); //do not use recursion to check for intersection whith all children
+        if(found.length > 0){
+            let intersaction = found[0];
+            this.tempVecP.copy(intersaction.point);
+            this.pointedAtObject = intersaction.object;
         }else{
-            this.tempMatrix.identity().extractRotation(controller.matrixWorld); //shoot a ray from a controller and find if it intersacts with a interactable object
-            this.raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
-            this.raycaster.ray.direction.set(0, 0, -1).applyMatrix4(this.tempMatrix);
+            this.tempVecP.set(0,50000,0);
+            this.raycaster.ray.intersectPlane(this.groundPlane, this.tempVecP);
+            this.pointedAtObject = undefined;
+        }
 
-            let boundingBoxes = [];
-            this.objects.children.forEach(element => {
-                if(this.objectModel != element){
-                    let box = element.getObjectByName('boundingBox');
-                    box.visible = true;
-                    boundingBoxes.push(box);
-                }
-            });
+        this.line.visible = true;
+        this.line.scale.z = this.tempVecP.distanceTo(this.raycaster.ray.origin);
 
-            let found = this.raycaster.intersectObjects(boundingBoxes, false); //do not use recursion to check for intersection whith all children
-            if(found.length > 0){
-                let intersaction = found[0];
-                this.tempVecP.copy(intersaction.point);
-                this.pointedAtObject = intersaction.object;
-            }else{
-                this.tempVecP.set(0,50000,0);;
-                this.raycaster.ray.intersectPlane(this.groundPlane, this.tempVecP);
-                this.pointedAtObject = undefined;
-            }
+        this.moveObject();
+        
+    }
+    moveObject(){
+        if(this.objectModel && this.objectBoundingBox){
+            this.scene.attach(this.objectBoundingBox);
+            this.objectModel.quaternion.set(0,0,0,1); //if ofset mode dont reset quaternion but set it to initial quaternion when object is selected
+            this.objectModel.position.copy(this.tempVecP);
+            this.objectModel.translateX(this.offsetXtranslate);
+            this.objectModel.translateY(this.offsetYtranslate)
+            this.objectModel.translateZ(this.offsetZtranslate)
+            //todo check if rotation order is correct
+            this.objectModel.rotateX(this.offsetXrotate*Math.PI/180);
+            this.objectModel.rotateY(this.offsetYrotate*Math.PI/180);
+            this.objectModel.rotateZ(this.offsetZrotate*Math.PI/180);
 
-            this.line.visible = true;
-            this.line.scale.z = this.tempVecP.distanceTo(this.raycaster.ray.origin);
-
-            if(this.objectModel && this.objectBoundingBox){
-                this.scene.attach(this.objectBoundingBox);
-                this.objectModel.quaternion.set(0,0,0,1); //if ofset mode dont reset quaternion but set it to initial quaternion when object is selected
-                this.objectModel.position.copy(this.tempVecP);
-                this.objectModel.translateX(this.offsetXtranslate);
-                this.objectModel.translateY(this.offsetYtranslate)
-                this.objectModel.translateZ(this.offsetZtranslate)
-                //todo check if rotation order is correct
-                this.objectModel.rotateX(this.offsetXrotate*Math.PI/180);
-                this.objectModel.rotateY(this.offsetYrotate*Math.PI/180);
-                this.objectModel.rotateZ(this.offsetZrotate*Math.PI/180);
-
-                
-                this.box.setFromObject(this.objectModel);
-                this.tempVec.copy(this.box.max)
-                this.tempVec.add(this.box.min);
-                this.tempVec.x *= 0.5; this.tempVec.y *= 0.5; this.tempVec.z *= 0.5;
-                this.objectBoundingBox.position.copy(this.tempVec);
-                this.objectBoundingBox.scale.set((this.box.max.x - this.box.min.x)*10, (this.box.max.y - this.box.min.y)*10, (this.box.max.z - this.box.min.z)*10);
-                this.objectModel.attach(this.objectBoundingBox);
-            }
+            
+            this.box.setFromObject(this.objectModel);
+            this.tempVec.copy(this.box.max)
+            this.tempVec.add(this.box.min);
+            this.tempVec.x *= 0.5; this.tempVec.y *= 0.5; this.tempVec.z *= 0.5;
+            this.objectBoundingBox.position.copy(this.tempVec);
+            this.objectBoundingBox.scale.set((this.box.max.x - this.box.min.x)*10.1, (this.box.max.y - this.box.min.y)*10.1, (this.box.max.z - this.box.min.z)*10.1);
+            this.objectModel.attach(this.objectBoundingBox);
         }
     }
+
     toolAction(){
-        if(this.selectObject == false && this.pointedAtObject){
-            this.selectObject = true;
+        if(this.objectSelected == false && this.pointedAtObject){
+            this.objectSelected = true;
             this.objectBoundingBox = this.pointedAtObject;
             this.objectModel = this.pointedAtObject.parent;
             this.pointedAtObject = undefined;
@@ -200,19 +234,20 @@ class ObjectManipulator {
             this.objectModel = undefined;
             this.objectBoundingBox = undefined;
             this.objectModel = undefined;
-            this.selectObject = false;
+            this.objectSelected = false;
             this.pointedAtObject = undefined;
         }
     }
     toolHideHelperItems(){
         this.line.visible = false;
-
+        this.pointedAtObject = undefined;
         this.objects.children.forEach(element => {
             if(this.objectModel != element){
                 let box = element.getObjectByName('boundingBox');
                 box.visible = false;
             }
         });
+        
     }
     toolShowHelperItems(){
         this.line.visible = true;

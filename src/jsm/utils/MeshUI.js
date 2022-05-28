@@ -305,7 +305,7 @@ class MeshUI {
         });
         return grabHandleButton;
     }
-    createButtonGrid(items, itemWidth, height = 1, rows=1, toggle = false, exclusive = false) {
+    createButtonGrid(items, itemWidth, height = 1, rows=1, toggle = false, exclusive = false, onChangeFunction = undefined) {
         //create a hiden overfolw button grid with a scrollbar
         let width = height* 4.2;
         let borderRadius = height / 6;
@@ -377,8 +377,8 @@ class MeshUI {
                             b.setState('idle');
                         }
                     }
-                    //ThreeMeshUI.update();
                 }
+                if(onChangeFunction)onChangeFunction();
             },toggle);
             if(Offset != 0){button.visible = false;}
             button.frame.userData.item = item; //save item in userData for later use
@@ -450,7 +450,7 @@ class MeshUI {
                 }
             }
 
-            renderFunction();
+            if(renderFunction)renderFunction();
 
         } else {
             if(this.GUI_elements.length > 0){
@@ -481,7 +481,7 @@ class MeshUI {
                             this.HoveredGUIobject = object;
                             this.HighlitedGUIelements.push(object);
 
-                            renderFunction();
+                            if(renderFunction)renderFunction();
                             ThreeMeshUI.update();
                         }
                     }
