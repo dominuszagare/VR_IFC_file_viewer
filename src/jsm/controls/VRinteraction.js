@@ -75,7 +75,7 @@ class VRinteraction {
 
         //contain all pencil tool logic in one place
         this.pencilTool = new PainterTool(scene,this.interactiveObjectsGroup,MESHUI);
-        this.teleporterTool = new TeleportTool(this.interactiveObjectsGroup,this.userGroup,this.ModelGroup,scene,MESHUI,this.groundPlane);
+        this.teleporterTool = new TeleportTool(this.interactiveObjectsGroup,this.userGroup,this.ModelGroup,overlay,MESHUI,this.groundPlane);
         this.objectSpawnerTool = new ObjectSpawner(this.ModelGroup,this.interactiveObjectsGroup,scene,MESHUI,this.groundPlane);
         this.objectManipulatorTool = new ObjectManipulator(this.ModelGroup,this.interactiveObjectsGroup,scene,MESHUI,this.groundPlane);
         //TODO make a inspect and mesuring tool

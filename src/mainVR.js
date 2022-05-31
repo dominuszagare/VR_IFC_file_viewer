@@ -8,11 +8,9 @@ import {
     DirectionalLight,
     Color,
     AmbientLight,
-    BoxGeometry,
-    MeshPhongMaterial,
-    Mesh,
     Box3,
-    MeshLambertMaterial
+    MeshLambertMaterial,
+    GridHelper
 } from 'three';
 import { OrbitControls } from './jsm/controls/OrbitControls.js';
 import { GLTFLoader } from './jsm/loaders/GLTFLoader.js';
@@ -20,17 +18,20 @@ import { IFCLoader } from "web-ifc-three/IFCLoader";
 import { MeshUI } from './jsm/utils/MeshUI.js';
 import { VRButton } from './jsm/webxr/VRButton.js';
 import { VRinteraction } from './jsm/controls/VRinteraction.js';
-import { Utility } from './jsm/utils/Utility.js';
-import { GridHelper } from 'three';
+
 
 import downloadIconImage from './images/download.png';
 import exampleIFCFile from './models/ifc/test.ifc';
+import cabinetIFCFile from './models/ifc/cabinet.ifc';
+import chairIFCFile from './models/ifc/grace.ifc';
 
 /*
 This javascript initialises s scene and controls for usage in virtual reality
 for desktop usage the scene and UI will look diferent 
 LIMITATION! progress will be lost when switching betwen desktop and VR mode unlles i figure out how to save relavant data while in sesion
 */
+
+
 
 document.body.setAttribute('style', 'margin: 0; overflow: hidden;');
 
@@ -195,11 +196,12 @@ function highlightIFCByRay(material, model, ifcModels, raycaster, _scene) {
 function loadIFC(dataURL,name,objectNum,timeout = 100) {
     try {
         ifcLoader.load(dataURL, (ifcModel) => {
-            //add to scene take a picture of the model and remove it from the scene
+
             let mesh = ifcModel;
             console.log(ifcModel);
 
             if(!(sessionStorage.getItem("recent-file-image-"+objectNum))){
+                //add to scene take a picture of the model and remove it from the scene
                 console.log("new image");
     
                 sessionStorage.setItem("recent-file-Data-URL-"+objectNum, dataURL); //store
@@ -250,7 +252,7 @@ function loadIFC(dataURL,name,objectNum,timeout = 100) {
     
                     //update options in object spawner
                     VRinter.objectSpawnerTool.addItem({
-                        text: "",
+                        text: name,
                         imageURL: imgData,
                         applayPropreties: {borderRadius: 0},
                         onClick: ()=>{VRinter.objectSpawnerTool.selectedObject = mesh},
@@ -258,9 +260,10 @@ function loadIFC(dataURL,name,objectNum,timeout = 100) {
                 },timeout);
 
             }else{
+                //add object to grid menu for selection
                 let imgData = sessionStorage.getItem("recent-file-image-"+objectNum);
                 VRinter.objectSpawnerTool.addItem({
-                    text: "",
+                    text: name,
                     imageURL: imgData,
                     applayPropreties: {borderRadius: 0},
                     onClick: ()=>{VRinter.objectSpawnerTool.selectedObject = mesh},
@@ -319,13 +322,14 @@ function initUI() {
     );
 
     menu1Handle.userData.menu.add(
-        meshUI.addWideButton('LOAD TEST IFC FILES', 0.1, () => {
-            // https://drive.google.com/drive/folders/1XKfFpRy5eQpICbqMMlwA23Dwr_sJC9q0?usp=sharing
+        meshUI.addWideButton('LOAD CABIENT', 0.1, () => {
+            loadIFC(cabinetIFCFile, "cabinet", fileNumber);
+        }),
+    );
 
-            //https://drive.google.com/file/d/10_aaaXgKxwOdY-HJbqzIHUZOkIKo98e7/view?usp=sharing
-            //https://drive.google.com/uc?export=download&id=10_aaaXgKxwOdY-HJbqzIHUZOkIKo98e7  //download link
-
-            //loadIFC('https://drive.google.com/uc?export=download&id=10_aaaXgKxwOdY-HJbqzIHUZOkIKo98e7',"kabinet",fileNumber);
+    menu1Handle.userData.menu.add(
+        meshUI.addWideButton('LOAD CHAIR', 0.1, () => {
+            loadIFC(chairIFCFile, "chair", fileNumber);
         }),
     );
     menu1Handle.position.set(1, 1.2, -1.1);

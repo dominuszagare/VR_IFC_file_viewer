@@ -164,6 +164,7 @@ class ObjectManipulator {
 
         const offseRotationButton = this.meshUI.addWideButton('OFSET ROT', 0.04, () => {
             if(this.offsetRotation){this.offsetRotation = false;}else{this.offsetRotation = true;}
+            this.moveObject();
         },true);
         offseRotationButton.autoLayout = false;
         this.toolMenuHandle.userData.menu.add(offseRotationButton);
@@ -171,6 +172,7 @@ class ObjectManipulator {
 
         const offseTranslationButton = this.meshUI.addWideButton('HOLD POZ', 0.04, () => {
             if(this.holdPosition){this.holdPosition = false;}else{this.holdPosition = true;}
+            this.moveObject();
         },true);
         offseTranslationButton.autoLayout = false;
         this.toolMenuHandle.userData.menu.add(offseTranslationButton);
@@ -217,8 +219,10 @@ class ObjectManipulator {
             let intersaction = found[0];
             this.tempVecP.copy(intersaction.point);
             this.pointedAtObject = intersaction.object;
-            this.higlightedObject = this.pointedAtObject;
-            this.higlightedObject.material = this.higlightMaterial;
+            if(!(this.objectModel && this.objectBoundingBox)){
+                this.higlightedObject = this.pointedAtObject;
+                this.higlightedObject.material = this.higlightMaterial;
+            }
 
         }else{
             this.tempVecP.set(0,50000,0);
@@ -264,6 +268,7 @@ class ObjectManipulator {
             this.tempVec.x *= 0.5; this.tempVec.y *= 0.5; this.tempVec.z *= 0.5;
             this.objectBoundingBox.position.copy(this.tempVec);
             this.objectBoundingBox.scale.set((this.box.max.x - this.box.min.x)*10.1, (this.box.max.y - this.box.min.y)*10.1, (this.box.max.z - this.box.min.z)*10.1);
+            this.objectBoundingBox.material = this.higlightMaterial;
             this.objectModel.attach(this.objectBoundingBox);
         }
     }

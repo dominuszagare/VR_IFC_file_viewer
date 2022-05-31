@@ -2,7 +2,7 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
-    mode: 'development', // or production (minimize file size)
+    mode: 'production', // development or production (minimize file size)
     stats: {warnings: false},
     entry: {
         main: path.resolve(__dirname, './src/mainVR.js'),

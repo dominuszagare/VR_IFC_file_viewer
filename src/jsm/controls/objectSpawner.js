@@ -3,6 +3,12 @@ import { Vector3, IcosahedronGeometry, Raycaster, Line, BufferGeometry, Matrix4,
 import cubeThumbnailImage from "../../images/cubeThumbnail.jpg"
 import sphereThumbnailImage from "../../images/sphereThumbnail.png"
 
+import { MeshBVH, acceleratedRaycast } from 'three-mesh-bvh';
+// Add the raycast function. Assumes the BVH is available on
+// the `boundsTree` variable
+Mesh.prototype.raycast = acceleratedRaycast; 
+
+//creates a THREE.Object3D in toolGroup whith object spawning logic atached
 class ObjectSpawner {
     constructor(ObjectGroup,toolGroup,_scene,MESHUI,groundPlane) {
         this.mesh = new Mesh(new BoxGeometry(0.05, 0.1, 0.05), new MeshLambertMaterial({ color: 0x660066 }));
@@ -233,15 +239,12 @@ class ObjectSpawner {
             this.raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
             this.raycaster.ray.direction.set(0, 0, -1).applyMatrix4(this.tempMatrix);
 
-            //use sparingly every 10 frames
-            if(this.frameCount > 10){
-                let found = this.raycaster.intersectObjects(this.objects.children, false); //do not use recursion to check for intersection whith all children
-                if(found.length > 0){
-                    let intersaction = found[0];
-                    this.tempVecP.copy(intersaction.point);
-                    
-                }
-                this.frameCount = 0;
+            //BVH method of raycasting-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+            this.raycaster.firstHitOnly = true;
+            let found = this.raycaster.intersectObjects(this.objects.children); //if object spawner corectly generated BVH for geometry this should work much faster
+            if(found.length > 0){
+                let intersaction = found[0];
+                this.tempVecP.copy(intersaction.point);
             }else{
                 this.tempVecP.set(0,50000,0);;
                 this.raycaster.ray.intersectPlane(this.groundPlane, this.tempVecP);
@@ -260,6 +263,8 @@ class ObjectSpawner {
                 mesh.material.emissive.r = 0;
                 mesh.material.emissive.b = 0;
             }
+            let geom = mesh.geometry;
+            geom.boundsTree = new MeshBVH( geom );
             this.objects.add(mesh);
         }
     }

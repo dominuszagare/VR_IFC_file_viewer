@@ -62,7 +62,7 @@ class MeshUI {
                 offset: 0.0005,
                 backgroundColor: new Color(0xffffff),
                 backgroundOpacity: 1,
-                fontColor: new Color(0x222222),
+                fontColor: new Color(0x999999),
             },
         };
         this.pressedStateAttributes = {
