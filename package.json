@@ -1,5 +1,5 @@
 {
-  "name": "VR_IFC_file_virwer",
+  "name": "VR_IFC_file_viewer",
   "version": "0.1.0",
   "description": "experiment on how to implement a VR aplication for viewing IFC files",
   "scripts": {
@@ -17,6 +17,7 @@
     "web-ifc-three": "0.0.116"
   },
   "devDependencies": {
+    "googleapis": "^100.0.0",
     "html-webpack-plugin": "^5.5.0",
     "webpack": "^5.72.1",
     "webpack-cli": "^4.9.2",

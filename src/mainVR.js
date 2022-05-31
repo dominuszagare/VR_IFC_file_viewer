@@ -26,7 +26,6 @@ import { GridHelper } from 'three';
 import downloadIconImage from './images/download.png';
 import exampleIFCFile from './models/ifc/test.ifc';
 
-
 /*
 This javascript initialises s scene and controls for usage in virtual reality
 for desktop usage the scene and UI will look diferent 
@@ -271,7 +270,7 @@ function loadIFC(dataURL,name,objectNum,timeout = 100) {
         });
         
     } catch (error) {
-        alert(error);
+        console.log(error.message);
     }
     loadingFileIcon.visible = false;
 }
@@ -320,18 +319,13 @@ function initUI() {
     );
 
     menu1Handle.userData.menu.add(
-        meshUI.addWideButton('TEST', 0.1, () => {
-            console.log('test');
-        }),
-    );
+        meshUI.addWideButton('LOAD TEST IFC FILES', 0.1, () => {
+            // https://drive.google.com/drive/folders/1XKfFpRy5eQpICbqMMlwA23Dwr_sJC9q0?usp=sharing
 
-    menu1Handle.userData.menu.add(
-        meshUI.addWideButton('SPAWN CUBE', 0.1, () => {
-            console.log('cube');
-            let simpleCube = new Mesh(new BoxGeometry(1, 1, 1), new MeshLambertMaterial({ color: 0x550fff }));
-            simpleCube.position.copy(VRinter.userGroup.position);
-            simpleCube.translateZ(-2);
-            VRinter.ModelGroup.add(simpleCube);
+            //https://drive.google.com/file/d/10_aaaXgKxwOdY-HJbqzIHUZOkIKo98e7/view?usp=sharing
+            //https://drive.google.com/uc?export=download&id=10_aaaXgKxwOdY-HJbqzIHUZOkIKo98e7  //download link
+
+            //loadIFC('https://drive.google.com/uc?export=download&id=10_aaaXgKxwOdY-HJbqzIHUZOkIKo98e7',"kabinet",fileNumber);
         }),
     );
     menu1Handle.position.set(1, 1.2, -1.1);

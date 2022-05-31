@@ -1,4 +1,4 @@
-import { Vector3, SphereGeometry, Plane, Raycaster, Line, BufferGeometry, Matrix4, Mesh, BoxGeometry,MeshLambertMaterial,Box3, DoubleSide } from "three";
+import { Vector3, IcosahedronGeometry, Raycaster, Line, BufferGeometry, Matrix4, Mesh, BoxGeometry,MeshLambertMaterial,Box3, DoubleSide } from "three";
 
 import cubeThumbnailImage from "../../images/cubeThumbnail.jpg"
 import sphereThumbnailImage from "../../images/sphereThumbnail.png"
@@ -30,7 +30,7 @@ class ObjectSpawner {
         this.rotateStep = 90;
         this.moveStep = 0.1;
 
-        this.objectBoundingBox = new Mesh(new BoxGeometry(0.1, 0.1, 0.1), new MeshLambertMaterial({ color: 0x0011A6, opacity: 0.2, transparent: true, side: DoubleSide }));
+        this.objectBoundingBox = new Mesh(new BoxGeometry(0.1, 0.1, 0.1), new MeshLambertMaterial({ color: 0x0011B6, opacity: 0.2, transparent: true, side: DoubleSide }));
         this.objectModel = new Mesh(new BoxGeometry(0.1, 0.1, 0.1), new MeshLambertMaterial({ color: 0x0011A6, opacity: 0.2, transparent: true, side: DoubleSide }));
         this.scene.add(this.objectModel);
         this.scene.add(this.objectBoundingBox);
@@ -48,8 +48,8 @@ class ObjectSpawner {
             text: "sphere",
             imageURL: sphereThumbnailImage,
             applayPropreties: {borderRadius: 0},
-            mesh: new Mesh(new SphereGeometry(1), new MeshLambertMaterial({color: 0x00ff00})),
-            onClick: ()=>{this.selectedObject = new Mesh(new SphereGeometry(1), new MeshLambertMaterial({color: 0x00ff00}));},
+            mesh: new Mesh(new IcosahedronGeometry(1), new MeshLambertMaterial({color: 0x00ff00})),
+            onClick: ()=>{this.selectedObject = new Mesh(new IcosahedronGeometry(1), new MeshLambertMaterial({color: 0x00ff00}));},
         };
         let items = [];
         items.push(testItem);

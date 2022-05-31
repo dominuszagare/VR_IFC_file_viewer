@@ -1,11 +1,14 @@
-import { Vector3,Quaternion,Box3,SphereGeometry, Plane, Raycaster, Line, BufferGeometry, Matrix4, Mesh, BoxGeometry,MeshLambertMaterial, DoubleSide } from "three";
+import { Vector3,Quaternion,Box3,IcosahedronGeometry, Plane, Raycaster, Line, BufferGeometry, Matrix4, Mesh, BoxGeometry,MeshLambertMaterial, DoubleSide } from "three";
 
 import cubeThumbnailImage from "../../images/cubeThumbnail.jpg"
 import sphereThumbnailImage from "../../images/sphereThumbnail.png"
 
 class ObjectManipulator {
     constructor(ObjectGroup,toolGroup,_scene,MESHUI,groundPlane) {
-        this.mesh = new Mesh(new BoxGeometry(0.05, 0.1, 0.05), new MeshLambertMaterial({ color: 0x220066 }));
+        this.higlightMaterial = new MeshLambertMaterial({ color: 0x00B611, opacity: 0.2, transparent: true, side: DoubleSide });
+        this.boundingBoxMaterial =  new MeshLambertMaterial({ color: 0x0011B6, opacity: 0.2, transparent: true, side: DoubleSide });
+
+        this.mesh = new Mesh(new BoxGeometry(0.05, 0.1, 0.05), new MeshLambertMaterial({ color: 0x6a58f5}));
         this.meshUI = MESHUI;
         this.objects = ObjectGroup;
         this.scene = _scene;
@@ -16,7 +19,14 @@ class ObjectManipulator {
         this.tempVec = new Vector3(0, 1, 0);
         this.tempVecP = new Vector3(0, 0, 0);
         this.box = new Box3();
+        this.position = new Vector3();
         this.quaternion = new Quaternion();
+        this.offsetRotation = false;
+        this.holdPosition = false;
+
+        this.ball = new Mesh(new IcosahedronGeometry(0.02), new MeshLambertMaterial({ color: 0xffffff }));
+        this.ball.visible = false;
+        this.scene.add(this.ball);
 
         this.offsetXtranslate = 0;
         this.offsetYtranslate = 0;
@@ -33,6 +43,7 @@ class ObjectManipulator {
         this.objectBoundingBox = undefined;
         this.objectModel = undefined;
         this.pointedAtObject = undefined;
+        this.higlightedObject = undefined;
 
         this.toolMenuHandle = this.meshUI.createMenu(
             0.04, //height
@@ -134,10 +145,10 @@ class ObjectManipulator {
         this.toolMenuHandle.userData.menu.add(this.selectorRotateStep);
         this.selectorRotateStep.position.set(-0.04*4.2,-0.18,0);
 
-        this.confirmButton = this.meshUI.addWideButton('CONFIRM', 0.04, () => {this.objectBoundingBox.visible = false; this.toolAction();});
-        this.confirmButton.autoLayout = false;
-        this.toolMenuHandle.userData.menu.add(this.confirmButton);
-        this.confirmButton.position.set(-0.04*4.2,-0.22,0);
+        const confirmButton = this.meshUI.addWideButton('CONFIRM', 0.04, () => {this.objectBoundingBox.visible = false; this.toolAction();});
+        confirmButton.autoLayout = false;
+        this.toolMenuHandle.userData.menu.add(confirmButton);
+        confirmButton.position.set(-0.04*4.2,-0.22,0);
 
         const deleteButton = this.meshUI.addWideButton('DELETE', 0.04, () => {
             if(this.objectBoundingBox && this.objectModel){
@@ -150,6 +161,20 @@ class ObjectManipulator {
         deleteButton.autoLayout = false;
         this.toolMenuHandle.userData.menu.add(deleteButton);
         deleteButton.position.set(0,-0.26,0);
+
+        const offseRotationButton = this.meshUI.addWideButton('OFSET ROT', 0.04, () => {
+            if(this.offsetRotation){this.offsetRotation = false;}else{this.offsetRotation = true;}
+        },true);
+        offseRotationButton.autoLayout = false;
+        this.toolMenuHandle.userData.menu.add(offseRotationButton);
+        offseRotationButton.position.set(-0.04*4.2,-0.26,0);
+
+        const offseTranslationButton = this.meshUI.addWideButton('HOLD POZ', 0.04, () => {
+            if(this.holdPosition){this.holdPosition = false;}else{this.holdPosition = true;}
+        },true);
+        offseTranslationButton.autoLayout = false;
+        this.toolMenuHandle.userData.menu.add(offseTranslationButton);
+        offseTranslationButton.position.set(-0.04*4.2,-0.3,0);
 
         //define menu handle position
         this.toolMenuHandle.position.set(-0.14,0.05,0);
@@ -182,17 +207,27 @@ class ObjectManipulator {
             }
         });
 
+        if(this.higlightedObject){
+            this.higlightedObject.material = this.boundingBoxMaterial;
+            this.higlightedObject = undefined;
+        }
+
         let found = this.raycaster.intersectObjects(boundingBoxes, false); //do not use recursion to check for intersection whith all children
         if(found.length > 0){
             let intersaction = found[0];
             this.tempVecP.copy(intersaction.point);
             this.pointedAtObject = intersaction.object;
+            this.higlightedObject = this.pointedAtObject;
+            this.higlightedObject.material = this.higlightMaterial;
+
         }else{
             this.tempVecP.set(0,50000,0);
             this.raycaster.ray.intersectPlane(this.groundPlane, this.tempVecP);
             this.pointedAtObject = undefined;
         }
 
+        this.ball.visible = true;
+        this.ball.position.copy(this.tempVecP);
         this.line.visible = true;
         this.line.scale.z = this.tempVecP.distanceTo(this.raycaster.ray.origin);
 
@@ -202,8 +237,18 @@ class ObjectManipulator {
     moveObject(){
         if(this.objectModel && this.objectBoundingBox){
             this.scene.attach(this.objectBoundingBox);
-            this.objectModel.quaternion.set(0,0,0,1); //if ofset mode dont reset quaternion but set it to initial quaternion when object is selected
-            this.objectModel.position.copy(this.tempVecP);
+            
+            if(this.holdPosition){
+                this.objectModel.position.copy(this.position);
+            }else{
+                this.objectModel.position.copy(this.tempVecP); //move to pointed position
+            }
+            if(this.offsetRotation){
+                this.objectModel.quaternion.copy(this.quaternion);
+            }else{
+                this.objectModel.quaternion.set(0,0,0,1); //if ofset mode dont reset quaternion but set it to initial quaternion when object is selected
+            }
+
             this.objectModel.translateX(this.offsetXtranslate);
             this.objectModel.translateY(this.offsetYtranslate)
             this.objectModel.translateZ(this.offsetZtranslate)
@@ -227,10 +272,13 @@ class ObjectManipulator {
         if(this.objectSelected == false && this.pointedAtObject){
             this.objectSelected = true;
             this.objectBoundingBox = this.pointedAtObject;
+            this.objectBoundingBox.material = this.higlightMaterial;
             this.objectModel = this.pointedAtObject.parent;
             this.pointedAtObject = undefined;
             this.quaternion.copy(this.objectModel.quaternion);
+            this.position.copy(this.objectModel.position);
         }else{
+            this.objectBoundingBox.material = this.boundingBoxMaterial;
             this.objectModel = undefined;
             this.objectBoundingBox = undefined;
             this.objectModel = undefined;
@@ -240,6 +288,7 @@ class ObjectManipulator {
     }
     toolHideHelperItems(){
         this.line.visible = false;
+        this.ball.visible = false;
         this.pointedAtObject = undefined;
         this.objects.children.forEach(element => {
             if(this.objectModel != element){
