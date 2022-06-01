@@ -255,7 +255,7 @@ function loadIFC(dataURL,name,objectNum,timeout = 100) {
                         text: name,
                         imageURL: imgData,
                         applayPropreties: {borderRadius: 0},
-                        onClick: ()=>{VRinter.objectSpawnerTool.selectedObject = mesh},
+                        onClick: ()=>{if(VRinter.objectSpawnerTool.selectedObject === mesh){VRinter.objectSpawnerTool.selectedObject = undefined;}else{VRinter.objectSpawnerTool.selectedObject = mesh;}},
                     });
                 },timeout);
 
@@ -266,7 +266,7 @@ function loadIFC(dataURL,name,objectNum,timeout = 100) {
                     text: name,
                     imageURL: imgData,
                     applayPropreties: {borderRadius: 0},
-                    onClick: ()=>{VRinter.objectSpawnerTool.selectedObject = mesh},
+                    onClick: ()=>{if(VRinter.objectSpawnerTool.selectedObject === mesh){VRinter.objectSpawnerTool.selectedObject = undefined;}else{VRinter.objectSpawnerTool.selectedObject = mesh;}},
                 });
             }
     

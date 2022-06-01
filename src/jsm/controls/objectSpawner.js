@@ -35,6 +35,7 @@ class ObjectSpawner {
         this.moveSteps = [0.001,0.01,0.1,1,10];
         this.rotateStep = 90;
         this.moveStep = 0.1;
+        this.snaping = false;
 
         this.objectBoundingBox = new Mesh(new BoxGeometry(0.1, 0.1, 0.1), new MeshLambertMaterial({ color: 0x0011B6, opacity: 0.2, transparent: true, side: DoubleSide }));
         this.objectModel = new Mesh(new BoxGeometry(0.1, 0.1, 0.1), new MeshLambertMaterial({ color: 0x0011A6, opacity: 0.2, transparent: true, side: DoubleSide }));
@@ -43,19 +44,21 @@ class ObjectSpawner {
         this.objectBoundingBox.visible = false;
         this.objectBoundingBox.name = 'boundingBox';
 
+        const cubeMesh =  new Mesh(new BoxGeometry(1, 1, 1), new MeshLambertMaterial({color: 0x00ff00}));
+        const icosphere = new Mesh(new IcosahedronGeometry(1), new MeshLambertMaterial({color: 0x00ff00}));
         let testItem = {
             text: "cube", //item must have these properties 
             imageURL: cubeThumbnailImage,
             applayPropreties: {borderRadius: 0},
-            mesh: new Mesh(new BoxGeometry(1, 1, 1), new MeshLambertMaterial({color: 0x00ff00})),
-            onClick: () => {this.selectedObject = new Mesh(new BoxGeometry(1, 1, 1), new MeshLambertMaterial({color: 0x00ff00}))},
+            mesh: cubeMesh,
+            onClick: () => {if(this.selectedObject === cubeMesh){this.selectedObject = undefined;}else{this.selectedObject = cubeMesh;}},
         };
         let testItem2 = {
             text: "sphere",
             imageURL: sphereThumbnailImage,
             applayPropreties: {borderRadius: 0},
-            mesh: new Mesh(new IcosahedronGeometry(1), new MeshLambertMaterial({color: 0x00ff00})),
-            onClick: ()=>{this.selectedObject = new Mesh(new IcosahedronGeometry(1), new MeshLambertMaterial({color: 0x00ff00}));},
+            mesh: icosphere,
+            onClick: ()=>{if(this.selectedObject === icosphere){this.selectedObject = undefined;}else{this.selectedObject = icosphere;}},
         };
         let items = [];
         items.push(testItem);
@@ -155,14 +158,21 @@ class ObjectSpawner {
         this.holdButton.position.set(0,-0.30,0);
         this.toolMenuHandle.userData.menu.add(this.holdButton);
 
-        this.confirmButton = this.meshUI.addWideButton('CONFIRM', 0.04,()=>{
+        const confirmButton = this.meshUI.addWideButton('CONFIRM', 0.04,()=>{
             this.toolAction(); 
             this.objectBoundingBox.visible = false;
             this.objectModel.visible = false;
         });
-        this.confirmButton.autoLayout = false;
-        this.confirmButton.position.set(0,-0.34,0);
-        this.toolMenuHandle.userData.menu.add(this.confirmButton);
+        confirmButton.autoLayout = false;
+        confirmButton.position.set(0,-0.34,0);
+        this.toolMenuHandle.userData.menu.add(confirmButton);
+
+        const snapButton = this.meshUI.addWideButton('SNAP', 0.04,()=>{
+            if(this.snaping){this.snaping = false;}else {this.snaping = true}
+        });
+        snapButton.autoLayout = false;
+        snapButton.position.set(0,-0.38,0);
+        this.toolMenuHandle.userData.menu.add(snapButton);
         
         this.toolMenuHandle.position.x = -0.14;
         this.toolMenuHandle.position.y = 0.05;
@@ -207,9 +217,13 @@ class ObjectSpawner {
     showPlaceholder(poz){
         //show placeholder at ray intersection
         if(this.selectedObject){
+            if(this.snaping){
+                poz.x = Math.round(poz.x / this.moveStep) * this.moveStep;
+                poz.y = Math.round(poz.y / this.moveStep) * this.moveStep;
+                poz.z = Math.round(poz.z / this.moveStep) * this.moveStep;
+            } 
             
             this.objectModel.copy(this.selectedObject);
-
             this.objectModel.position.copy(poz);
             this.objectModel.translateX(this.offsetXtranslate);
             this.objectModel.translateY(this.offsetYtranslate)
@@ -228,6 +242,9 @@ class ObjectSpawner {
 
             this.objectBoundingBox.visible = true;
             this.objectModel.visible = true;
+        }else{
+            if(this.objectModel)this.objectModel.visible = false;
+            if(this.objectBoundingBox)this.objectBoundingBox.visible = false;
         }
     }
 

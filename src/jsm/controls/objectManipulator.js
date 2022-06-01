@@ -39,6 +39,7 @@ class ObjectManipulator {
         this.moveSteps = [0.001,0.01,0.1,1,10];
         this.rotateStep = 90;
         this.moveStep = 0.1;
+        this.snaping = false;
 
         this.objectBoundingBox = undefined;
         this.objectModel = undefined;
@@ -178,6 +179,13 @@ class ObjectManipulator {
         this.toolMenuHandle.userData.menu.add(offseTranslationButton);
         offseTranslationButton.position.set(-0.04*4.2,-0.3,0);
 
+        const snapButton = this.meshUI.addWideButton('SNAP', 0.04,()=>{
+            if(this.snaping){this.snaping = false;}else {this.snaping = true}
+        });
+        snapButton.autoLayout = false;
+        snapButton.position.set(0,-0.30,0);
+        this.toolMenuHandle.userData.menu.add(snapButton);
+
         //define menu handle position
         this.toolMenuHandle.position.set(-0.14,0.05,0);
         this.mesh.userData.UI = this.toolMenuHandle;
@@ -245,6 +253,11 @@ class ObjectManipulator {
             if(this.holdPosition){
                 this.objectModel.position.copy(this.position);
             }else{
+                if(this.snaping){
+                    this.tempVecP.x = Math.round(this.tempVecP.x / this.moveStep) * this.moveStep;
+                    this.tempVecP.y = Math.round(this.tempVecP.y / this.moveStep) * this.moveStep;
+                    this.tempVecP.z = Math.round(this.tempVecP.z / this.moveStep) * this.moveStep;
+                }
                 this.objectModel.position.copy(this.tempVecP); //move to pointed position
             }
             if(this.offsetRotation){
