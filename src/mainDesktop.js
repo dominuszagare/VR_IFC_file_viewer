@@ -18,9 +18,9 @@ import {
     MeshLambertMaterial,
     MeshPhongMaterial,
 } from 'three';
-import { OrbitControls } from './jsm/controls/OrbitControls.js';
-import { TransformControls } from './jsm/controls/TransformControls.js';
-import { GLTFLoader } from './jsm/loaders/GLTFLoader.js';
+import { OrbitControls } from '../node_modules/three/examples/jsm/controls/OrbitControls.js';
+import { TransformControls } from '../node_modules/three/examples/jsm/controls/TransformControls.js';
+import { GLTFLoader } from '../node_modules/three/examples/jsm/loaders/GLTFLoader.js';
 import InfiniteGridHelper from './jsm/utils/infiniteGridHelper.js';
 import {IFCLoader} from "web-ifc-three/IFCLoader";
 import { MeshUI } from './jsm/utils/MeshUI.js';

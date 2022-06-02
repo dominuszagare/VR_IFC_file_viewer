@@ -1,7 +1,9 @@
 import { Vector3,Quaternion,Box3,IcosahedronGeometry, Plane, Raycaster, Line, BufferGeometry, Matrix4, Mesh, BoxGeometry,MeshLambertMaterial, DoubleSide } from "three";
 
-import cubeThumbnailImage from "../../images/cubeThumbnail.jpg"
-import sphereThumbnailImage from "../../images/sphereThumbnail.png"
+import { acceleratedRaycast } from 'three-mesh-bvh';
+// Add the raycast function. Assumes the BVH is available on
+// the `boundsTree` variable
+Mesh.prototype.raycast = acceleratedRaycast; 
 
 class ObjectManipulator {
     constructor(ObjectGroup,toolGroup,_scene,MESHUI,groundPlane) {
@@ -54,6 +56,11 @@ class ObjectManipulator {
             false, //does it reoient itself when moved to face ray origin
             false, //is handle atached at the bottom
         );
+
+        const cancelButton = this.meshUI.addWideButton('CANCEL', 0.04,()=>{this.cancelAction();});
+        cancelButton.autoLayout = false;
+        this.toolMenuHandle.userData.menu.add(cancelButton);
+        cancelButton.position.set(-0.04*4.2,0.02,0);
 
         const moveButton = this.meshUI.addWideButton('MOVE XYZ', 0.04);
         moveButton.autoLayout = false;
@@ -181,7 +188,7 @@ class ObjectManipulator {
 
         const snapButton = this.meshUI.addWideButton('SNAP', 0.04,()=>{
             if(this.snaping){this.snaping = false;}else {this.snaping = true}
-        });
+        },true);
         snapButton.autoLayout = false;
         snapButton.position.set(0,-0.30,0);
         this.toolMenuHandle.userData.menu.add(snapButton);
@@ -218,7 +225,7 @@ class ObjectManipulator {
         });
 
         if(this.higlightedObject){
-            this.higlightedObject.material = this.boundingBoxMaterial;
+            if(this.higlightedObject.material)this.higlightedObject.material = this.boundingBoxMaterial;
             this.higlightedObject = undefined;
         }
 
@@ -233,9 +240,18 @@ class ObjectManipulator {
             }
 
         }else{
-            this.tempVecP.set(0,50000,0);
-            this.raycaster.ray.intersectPlane(this.groundPlane, this.tempVecP);
             this.pointedAtObject = undefined;
+        }
+
+        //BVH method of raycasting-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+        this.raycaster.firstHitOnly = true;
+        found = this.raycaster.intersectObjects(this.objects.children); //if object spawner corectly generated BVH for geometry this should work much faster
+        if(found.length > 0){
+            let intersaction = found[0];
+            this.tempVecP.copy(intersaction.point);
+        }else{
+            this.tempVecP.set(0,50000,0);;
+            this.raycaster.ray.intersectPlane(this.groundPlane, this.tempVecP);
         }
 
         this.ball.visible = true;
@@ -246,6 +262,24 @@ class ObjectManipulator {
         this.moveObject();
         
     }
+    cancelAction(){
+        if(this.objectModel && this.objectBoundingBox){
+            this.objectBoundingBox.visible = false;
+            this.objectModel.position.copy(this.position);
+            this.objectModel.quaternion.copy(this.quaternion);
+
+            this.scene.attach(this.objectBoundingBox);
+            this.box.setFromObject(this.objectModel);
+            this.tempVec.copy(this.box.max)
+            this.tempVec.add(this.box.min);
+            this.tempVec.x *= 0.5; this.tempVec.y *= 0.5; this.tempVec.z *= 0.5;
+            this.objectBoundingBox.position.copy(this.tempVec);
+            this.objectBoundingBox.scale.set((this.box.max.x - this.box.min.x)*10.1, (this.box.max.y - this.box.min.y)*10.1, (this.box.max.z - this.box.min.z)*10.1);
+            this.objectModel.attach(this.objectBoundingBox);
+        }
+        this.toolAction();
+    }
+
     moveObject(){
         if(this.objectModel && this.objectBoundingBox){
             this.scene.attach(this.objectBoundingBox);
@@ -281,7 +315,7 @@ class ObjectManipulator {
             this.tempVec.x *= 0.5; this.tempVec.y *= 0.5; this.tempVec.z *= 0.5;
             this.objectBoundingBox.position.copy(this.tempVec);
             this.objectBoundingBox.scale.set((this.box.max.x - this.box.min.x)*10.1, (this.box.max.y - this.box.min.y)*10.1, (this.box.max.z - this.box.min.z)*10.1);
-            this.objectBoundingBox.material = this.higlightMaterial;
+            if(this.objectBoundingBox.material)this.objectBoundingBox.material = this.higlightMaterial;
             this.objectModel.attach(this.objectBoundingBox);
         }
     }
@@ -290,13 +324,15 @@ class ObjectManipulator {
         if(this.objectSelected == false && this.pointedAtObject){
             this.objectSelected = true;
             this.objectBoundingBox = this.pointedAtObject;
-            this.objectBoundingBox.material = this.higlightMaterial;
+            if(this.objectBoundingBox.material)this.objectBoundingBox.material = this.higlightMaterial;
             this.objectModel = this.pointedAtObject.parent;
+            this.scene.attach(this.objectModel);
             this.pointedAtObject = undefined;
             this.quaternion.copy(this.objectModel.quaternion);
             this.position.copy(this.objectModel.position);
         }else{
-            this.objectBoundingBox.material = this.boundingBoxMaterial;
+            if(this.objectBoundingBox)this.objectBoundingBox.material = this.boundingBoxMaterial;
+            if(this.objectModel)this.objects.attach(this.objectModel);
             this.objectModel = undefined;
             this.objectBoundingBox = undefined;
             this.objectModel = undefined;
@@ -314,7 +350,7 @@ class ObjectManipulator {
                 box.visible = false;
             }
         });
-        
+        //this.cancelAction(); 
     }
     toolShowHelperItems(){
         this.line.visible = true;

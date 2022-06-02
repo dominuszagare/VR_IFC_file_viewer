@@ -192,7 +192,7 @@ class TeleportTool {
         let found = this.raycaster.intersectObjects(this.objects.children); //if object spawner corectly generated BVH for geometry this should work much faster
         if(found.length > 0){
             let intersaction = found[0];
-            if((intersaction.point.y - this.groundHeight) > -3){ //snap to ground
+            if((intersaction.point.y - this.groundHeight) > -6){ //snap to ground
                 //this.vrLocationMarker.position.copy(intersaction.point);
                 this.vrLocationMarker.position.copy(intersaction.point);
             }else{this.vrLocationMarker.position.copy(this.marker.position);}

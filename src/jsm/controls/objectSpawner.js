@@ -169,7 +169,7 @@ class ObjectSpawner {
 
         const snapButton = this.meshUI.addWideButton('SNAP', 0.04,()=>{
             if(this.snaping){this.snaping = false;}else {this.snaping = true}
-        });
+        },true);
         snapButton.autoLayout = false;
         snapButton.position.set(0,-0.38,0);
         this.toolMenuHandle.userData.menu.add(snapButton);
@@ -178,7 +178,7 @@ class ObjectSpawner {
         this.toolMenuHandle.position.y = 0.05;
         this.mesh.userData.UI = this.toolMenuHandle;
         this.mesh.add(this.toolMenuHandle);
-        this.mesh.position.set(0, 1.5, -1);
+        this.mesh.position.set(0.2, 1.5, -1);
         this.mesh.name = 'objectSpawner';
         toolGroup.add(this.mesh);
 

@@ -10,20 +10,24 @@ import {
     AmbientLight,
     Box3,
     MeshLambertMaterial,
+    Group,
     GridHelper
 } from 'three';
-import { OrbitControls } from './jsm/controls/OrbitControls.js';
-import { GLTFLoader } from './jsm/loaders/GLTFLoader.js';
+import { OrbitControls } from '../node_modules/three/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader } from '../node_modules/three/examples/jsm/loaders/GLTFLoader.js';
 import { IFCLoader } from "web-ifc-three/IFCLoader";
 import { MeshUI } from './jsm/utils/MeshUI.js';
-import { VRButton } from './jsm/webxr/VRButton.js';
+import { VRButton } from '../node_modules/three/examples/jsm/webxr/VRButton.js';
 import { VRinteraction } from './jsm/controls/VRinteraction.js';
+import { MeshBVHVisualizer } from 'three-mesh-bvh';
+import Stats from '../node_modules/three/examples/jsm/libs/stats.module.js';
 
 
 import downloadIconImage from './images/download.png';
 import exampleIFCFile from './models/ifc/test.ifc';
 import cabinetIFCFile from './models/ifc/cabinet.ifc';
 import chairIFCFile from './models/ifc/grace.ifc';
+import buildingIFCFile from './models/ifc/building.ifc';
 
 /*
 This javascript initialises s scene and controls for usage in virtual reality
@@ -35,11 +39,27 @@ LIMITATION! progress will be lost when switching betwen desktop and VR mode unll
 
 document.body.setAttribute('style', 'margin: 0; overflow: hidden;');
 
+var stats1 = new Stats();
+stats1.showPanel(0); // Panel 0 = fps
+stats1.domElement.style.cssText = 'position:absolute;top:0px;left:0px;';
+document.body.appendChild(stats1.domElement);
+
+var stats2 = new Stats();
+stats2.showPanel(2); // Panel 2 = mb
+stats2.domElement.style.cssText = 'position:absolute;top:0px;left:80px;';
+document.body.appendChild(stats2.domElement);
+
+var stats3 = new Stats();
+stats3.showPanel(1); // Panel 3 = ms
+stats3.domElement.style.cssText = 'position:absolute;top:48px;left:0px;';
+document.body.appendChild(stats3.domElement);
+
 //global varible and object declarations ****************************************************
 let clock = new Clock();
 let scene = new Scene();
 let OverlayScene = new Scene(); //scena za elemente ki se izrisujejo nad vsemi
 let camera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
 
 // setup renderer
 var renderer = new WebGLRenderer({ antialias: true });
@@ -63,7 +83,10 @@ const ifcLoader = new IFCLoader();
 ifcLoader.ifcManager.setWasmPath("./");
 const ifc = ifcLoader.ifcManager;
 let meshUI = new MeshUI(freezeCamera, unfrezeCamera);
+let GUI_Group = new Group();
 OverlayScene.add(meshUI.point)
+let visulizeBVH = false;
+let visulizers = [];
 
 function freezeCamera() {
     CameraControl.enabled = false;
@@ -78,8 +101,8 @@ CameraControl.addEventListener('change', () => {
 
 window.addEventListener('pointerdown', () => {meshUI.onSelect();});
 window.addEventListener('pointerup', () => {meshUI.onRelese();});
-window.addEventListener('touchstart', () => {meshUI.onSelect();});
-window.addEventListener('touchend', () => {meshUI.onRelese();});
+//window.addEventListener('touchstart', () => {meshUI.onSelect();});
+//window.addEventListener('touchend', () => {meshUI.onRelese();});
 
 sceneInit(scene); //setup lighting and helper objects
 //setup VR interaction controls
@@ -90,7 +113,7 @@ let loadingFileIcon = meshUI.addSquareImageButton(0.7,"",downloadIconImage);
 loadingFileIcon.set({backgroundOpacity: 0.2, borderRadius: 0.05});
 
 function sceneInit(objectGroup) {
-    objectGroup.background = new Color(0xa0afa0);
+    objectGroup.background = new Color(0x383838);
     const directionalLight1 = new DirectionalLight(0xffeeff, 0.8);
     directionalLight1.position.set(1, 1, 1);
     objectGroup.add(directionalLight1);
@@ -115,6 +138,7 @@ function sceneInit(objectGroup) {
     objectGroup.add(arrowHelperY);
     objectGroup.add(arrowHelperZ);
 }
+
 
 let fileNumber = 0;
 let loadedModels = [];
@@ -195,6 +219,7 @@ function highlightIFCByRay(material, model, ifcModels, raycaster, _scene) {
 
 function loadIFC(dataURL,name,objectNum,timeout = 100) {
     try {
+        if(name.length > 8){name = name.slice(0,8);}
         ifcLoader.load(dataURL, (ifcModel) => {
 
             let mesh = ifcModel;
@@ -298,6 +323,7 @@ function initUI() {
     );
 
     //define UI behavior
+    /*
     let menu1Handle = meshUI.createMenu(
         0.1, //handle height
         0.35, //menu height
@@ -333,11 +359,72 @@ function initUI() {
         }),
     );
     menu1Handle.position.set(1, 1.2, -1.1);
-
     VRinter.userGroup.add(menu1Handle);
+    */
+
+    let menu2Handle = meshUI.createMenu(
+        0.03, //handle height
+        0.15, //menu height
+        'OPTIONS',
+        false, //is it dragable ?
+        false, //does it reoient itself when moved to face ray origin
+    );
+    menu2Handle.position.set(0, 0.14, -0.2);
+    GUI_Group.add(menu2Handle);
+    OverlayScene.add(GUI_Group);
+    camera.attach(GUI_Group);
+
+    menu2Handle.userData.menu.add(
+        meshUI.addWideButton('LOAD FILE', 0.03, () => {
+            console.log('open file dialog');
+            // creating input on-the-fly
+            var input = document.createElement("input");
+            input.type = 'file';
+            input.onchange = e => {
+                let files = Array.from(input.files);
+                console.log('load files',files);
+                ([...files]).forEach(uploadFile);
+            };
+            input.click();
+        })
+    );
+
+    menu2Handle.userData.menu.add(
+        meshUI.addWideButton('LOAD CABIENT', 0.03, () => {
+            loadIFC(cabinetIFCFile, "cabinet", fileNumber);
+        }),
+    );
+    menu2Handle.userData.menu.add(
+        meshUI.addWideButton('LOAD CHAIR', 0.03, () => {
+            loadIFC(chairIFCFile, "chair", fileNumber);
+        }),
+    );
+    menu2Handle.userData.menu.add(
+        meshUI.addWideButton('LOAD BUILDING', 0.03, () => {
+            loadIFC(buildingIFCFile, "building", fileNumber);
+        }),
+    );
+    menu2Handle.userData.menu.add(
+        meshUI.addWideButton('SHOW BVH', 0.03, () => {
+            if(visulizeBVH == false){
+                VRinter.ModelGroup.children.forEach(object => {
+                    console.log(object.name);
+                    let visualizer = new MeshBVHVisualizer( object, 22 );
+                    scene.add( visualizer );
+                    visualizer.visible = true;
+                    visulizers.push(visualizer);
+                });
+                visulizeBVH = true;
+            }else{
+                visulizeBVH = false
+                visulizers.forEach(visualizer => {scene.remove(visualizer);});
+                visulizers = [];
+            }
+        },true)
+    );
+    menu2Handle.userData.menu.visible = true;
     
-    
-    
+
 
     ThreeMeshUI.update();
 }
@@ -374,14 +461,25 @@ document.addEventListener("DOMContentLoaded", ()=>{
     camera.lookAt(0, 1, -1);
     CameraControl.target.copy({ x: 0, y: 1, z: -1 });
 
-    //setup animation loop
-    renderer.setAnimationLoop(function () {
-
+    //setup program loop
+    renderer.setAnimationLoop(()=>{
+        if (!renderer.xr.isPresenting) {
+            GUI_Group.visible = true;
+            //GUI_Group.position.copy(camera.position);
+            //GUI_Group.setRotationFromQuaternion(camera.quaternion);
+        }else{
+            GUI_Group.visible = false;
+        }
+    
         VRinter.animate(clock);
         renderer.clear();
         renderer.render(scene, camera);
         renderer.clearDepth();
         renderer.render(OverlayScene, camera); //izrisovanje nad vsemi objekti
+
+        stats1.update();
+        stats2.update();
+        stats3.update();
     });
     setTimeout(()=>{VRinter.objectSpawnerTool.container.userData.update();},1000);
 

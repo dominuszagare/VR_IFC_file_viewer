@@ -19,9 +19,9 @@ import {
     SphereGeometry,
     Plane,
 } from 'three';
-import { XRControllerModelFactory } from '../webxr/XRControllerModelFactory.js';
+import { XRControllerModelFactory } from '../../../node_modules/three/examples/jsm/webxr/XRControllerModelFactory.js';
 import {IFCLoader} from "web-ifc-three/IFCLoader";
-import { GLTFLoader } from '../loaders/GLTFLoader.js';
+import { GLTFLoader } from '../../../node_modules/three/examples/jsm/loaders/GLTFLoader.js';
 import { PainterTool } from './painterTool.js';
 import { ObjectSpawner } from './objectSpawner.js';
 import { TeleportTool } from './teleportTool.js';
@@ -85,11 +85,11 @@ class VRinteraction {
         
         this.yojstickToolBase.name = 'yojstickBase';
         this.userGroup.add(this.yojstickToolHandle);//handle is not selectable
-        this.yojstickToolHandle.position.set(0.2, 1.5, -1);
-        this.yojstickToolBase.position.set(0.2, 1.5, -1);
+        this.yojstickToolHandle.position.set(0.2, 0.8, -0.8);
+        this.yojstickToolBase.position.set(0.2, 0.8, -0.8);
         this.interactiveObjectsGroup.add(this.yojstickToolBase);
         this.yojstickControl = new Mesh(new SphereGeometry(0.06), new MeshToonMaterial({ color: 0x440066 }));
-        this.yojstickControl.position.set(0.2, 1.6, -1);
+        this.yojstickControl.position.set(0.2, 0.9, -0.8);
         this.yojstickControl.name = 'yojstickControl';
         this.interactiveObjectsGroup.add(this.yojstickControl);
 

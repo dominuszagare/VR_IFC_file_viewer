@@ -7,17 +7,25 @@
     "build": "webpack",
     "dev": "webpack serve"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "IFC",
+    "virtual-reality",
+    "3d",
+    "webgl",
+    "threejs",
+    "webxr",
+    "javascript"
+  ],
+  "author": "Dominik Zagar",
+  "license": "CC BY-NC-ND",
   "dependencies": {
+    "stats.js": "^0.17.0",
     "three": "^0.140.2",
     "three-mesh-bvh": "^0.5.11",
     "three-mesh-ui": "^6.4.4",
     "web-ifc-three": "0.0.116"
   },
   "devDependencies": {
-    "googleapis": "^100.0.0",
     "html-webpack-plugin": "^5.5.0",
     "webpack": "^5.72.1",
     "webpack-cli": "^4.9.2",
