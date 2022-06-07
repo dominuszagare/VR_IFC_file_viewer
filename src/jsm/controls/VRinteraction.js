@@ -52,7 +52,6 @@ class VRinteraction {
 
         this.cameraDistance = 6;
         this.selectionDisabled = false;
-        this.animateCam = false;
         this.targetCameraQuaterion = new Quaternion();
 
         this.selectedExpressID = null;
@@ -70,9 +69,9 @@ class VRinteraction {
         this.higlightedObjects = [];
 
         //objects holding temp geometry until replaced with proper models
-        this.obj3Dcursor = new Mesh(new BoxGeometry(0.4, 0.4, 0.4), new MeshLambertMaterial({ color: 0xff0fff }));
-        this.objCursorRing = new Mesh(new BoxGeometry(0.5, 0.5, 0.5), new MeshLambertMaterial({ color: 0xff0fff }));
-        this.objCursor = new Mesh(new BoxGeometry(0.3, 0.3, 0.3), new MeshLambertMaterial({ color: 0x000fff }));
+        //this.obj3Dcursor = new Mesh(new BoxGeometry(0.4, 0.4, 0.4), new MeshLambertMaterial({ color: 0xff0fff }));
+        //this.objCursorRing = new Mesh(new BoxGeometry(0.5, 0.5, 0.5), new MeshLambertMaterial({ color: 0xff0fff }));
+        //this.objCursor = new Mesh(new BoxGeometry(0.3, 0.3, 0.3), new MeshLambertMaterial({ color: 0x000fff }));
 
         //contain all pencil tool logic in one place
         this.pencilTool = new PainterTool(scene,this.interactiveObjectsGroup,MESHUI);
@@ -112,12 +111,6 @@ class VRinteraction {
         this.meshUI = MESHUI;
 
         //initial setup
-
-        this.xrRefSpace;
-        this.boxes_left = [];
-        this.boxes_right = [];
-        this.boxes = { left: this.boxes_left, right: this.boxes_right};
-
         this.controller1 = this.getAndinitilizeXRcontroller(0, this.userGroup);
         this.activeControler = this.controller1;
         this.controller2 = this.getAndinitilizeXRcontroller(1, this.userGroup);
@@ -132,7 +125,7 @@ class VRinteraction {
         
         setTimeout(() => { //update UI after the scene is loaded
             this.meshUI.update();
-        }, 1000)
+        }, 2000)
     }
 
     createOverlayObjects() {
@@ -146,16 +139,16 @@ class VRinteraction {
         let locationMarker = this.teleporterTool.vrLocationMarker;
         let yojstickToolBase = this.yojstickToolBase;
         let yojstickToolHandle = this.yojstickToolHandle;
-        let marker1 = this.obj3Dcursor;
-        let marker2 = this.objCursorRing;
-        let marker3 = this.objCursor;
+        //let marker1 = this.obj3Dcursor;
+        //let marker2 = this.objCursorRing;
+        //let marker3 = this.objCursor;
         this.gltfLoader.load(interactiveObjectsModels,function (gltf) {
                 teleportTool.geometry.copy(gltf.scene.children[4].geometry);
                 pencilTool.geometry.copy(gltf.scene.children[5].geometry);
                 locationMarker.geometry.copy(gltf.scene.children[2].geometry);
-                marker1.geometry.copy(gltf.scene.children[1].geometry);
-                marker2.geometry.copy(gltf.scene.children[3].geometry);
-                marker3.geometry.copy(gltf.scene.children[0].geometry);
+                //marker1.geometry.copy(gltf.scene.children[1].geometry);
+                //marker2.geometry.copy(gltf.scene.children[3].geometry);
+                //marker3.geometry.copy(gltf.scene.children[0].geometry);
                 yojstickToolBase.geometry.copy(gltf.scene.children[7].geometry);
                 yojstickToolHandle.geometry.copy(gltf.scene.children[6].geometry);
             },
@@ -166,9 +159,9 @@ class VRinteraction {
         );
 
         this.scene.add(this.ModelGroup);
-        this.overlay.add(this.obj3Dcursor);
-        this.overlay.add(this.objCursorRing);
-        this.overlay.add(this.objCursor);
+        //this.overlay.add(this.obj3Dcursor);
+        //this.overlay.add(this.objCursorRing);
+        //this.overlay.add(this.objCursor);
     }
 
 
@@ -233,8 +226,6 @@ class VRinteraction {
         const distanceThumbTrigger = thumbTip.position.distanceTo( indexIntermidiate.position);
         //const distanceTrigger2 = 1;//thumbTip.position.distanceTo( middleIntermidiate.position);
 
-        
-
         if(distanceMiddle < 0.05 && distanceRing < 0.05 && distancePinky < 0.05 && distanceIndex > 0.1){
             hand.userData.pointing = true;
         }else{   
@@ -291,9 +282,6 @@ class VRinteraction {
             hand.userData.squeeze = false;
             this.squeezeEndController(hand);
         }
-
-
-
         if(hand.userData.select == false && distanceThumbTrigger < 0.02){
             hand.userData.select = true;
             hand.scale.set(0.5,0.5,0.5);
@@ -608,13 +596,13 @@ class VRinteraction {
                 object.material.emissive.r = 1; //TODO change to a method that gives objects a white contur 
                 higlightedObjects.push(object);
             }
-            line.scale.z = intersection.distance;
+            if(line)line.scale.z = intersection.distance;
             return intersection;
         } else if (this.activeControler !== controller) {
-            line.scale.z = 0.1;
+            if(line)line.scale.z = 0.1;
             controller.userData.pointingAtObject = undefined;
         } else {
-            line.scale.z = 5;
+            if(line)line.scale.z = 5;
             controller.userData.pointingAtObject = undefined;
         }
 
@@ -650,6 +638,7 @@ class VRinteraction {
 
         }
 
+        /*
         const delta = clock.getDelta();
         let camera = this.camera;
         if (this.loadingObjectPlaceholder.visible) {
@@ -665,14 +654,8 @@ class VRinteraction {
         this.tempVecS.set(this.cameraDistance / 60, this.cameraDistance / 60, this.cameraDistance / 60);
         this.obj3Dcursor.scale.copy(this.tempVecS);
         this.objCursorRing.lookAt(camera.position);
+        */
 
-        if (this.animateCam) {
-            if (camera.quaternion.equals(this.targetCameraQuaterion)) {
-                this.animateCam = false;
-            }
-            const step = 8 * delta;
-            camera.quaternion.rotateTowards(this.targetCameraQuaterion, step);
-        }
     }
 }
 export { VRinteraction };

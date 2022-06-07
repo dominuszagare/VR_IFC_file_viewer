@@ -9,6 +9,7 @@ import {
     Color,
     AmbientLight,
     Box3,
+    BoxGeometry,
     MeshLambertMaterial,
     Group,
     GridHelper
@@ -28,6 +29,8 @@ import exampleIFCFile from './models/ifc/test.ifc';
 import cabinetIFCFile from './models/ifc/cabinet.ifc';
 import chairIFCFile from './models/ifc/grace.ifc';
 import buildingIFCFile from './models/ifc/building.ifc';
+import { Object3D } from 'three';
+import { Mesh } from 'three';
 
 /*
 This javascript initialises s scene and controls for usage in virtual reality
@@ -87,8 +90,8 @@ let GUI_Group = new Group();
 OverlayScene.add(meshUI.point)
 let visulizeBVH = false;
 let visulizers = [];
-let handTracking = false;
-let desktopMode = true;
+let desktopMode = false;
+let tempVec = new Vector3();
 
 var loadingModel = false;
 
@@ -98,15 +101,7 @@ function freezeCamera() {
 function unfrezeCamera() {
     CameraControl.enabled = true;
 }
-//when draging items always drag them camera plane
-CameraControl.addEventListener('change', () => {
-    if (!renderer.xr.isPresenting) camera.getWorldPosition(meshUI.camPoz);
-});
 
-window.addEventListener('pointerdown', () => {if (!renderer.xr.isPresenting) meshUI.onSelect();});
-window.addEventListener('pointerup', () => {if (!renderer.xr.isPresenting) meshUI.onRelese();});
-//window.addEventListener('touchstart', () => {meshUI.onSelect();});
-//window.addEventListener('touchend', () => {meshUI.onRelese();});
 
 sceneInit(scene); //setup lighting and helper objects
 //setup VR interaction controls
@@ -143,10 +138,36 @@ function sceneInit(objectGroup) {
     objectGroup.add(arrowHelperZ);
 }
 
+let desktopControlerSpoofer = initDesktopControlerSpoofer();
+//create buttons to switch between tools 
+
+function renderScene(){
+    if (!renderer.xr.isPresenting) {
+        GUI_Group.visible = true;
+        GUI_Group.position.copy(camera.position);
+        GUI_Group.quaternion.copy(camera.quaternion);
+    }else{
+        GUI_Group.visible = false;
+    }
+
+    if(desktopMode){
+        //desktop mode continuos animations
+    }else{
+        VRinter.animate(clock);
+    }
+    renderer.clear();
+    renderer.render(scene, camera);
+    renderer.clearDepth();
+    renderer.render(OverlayScene, camera); //izrisovanje nad vsemi objekti
+
+    stats1.update();
+    stats2.update();
+    stats3.update();
+}
+
+
 
 let fileNumber = 0;
-let loadedModels = [];
-let counter1 = 0; 
 
 //prevent default behavior like opening files in the browser
 ;['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -218,8 +239,6 @@ function highlightIFCByRay(material, model, ifcModels, raycaster, _scene) {
         ifc.removeSubset(model.id, material);
     }
 }
-
-
 
 function loadIFC(dataURL,name,objectNum,timeout = 100) {
     try {
@@ -311,79 +330,67 @@ function loadIFC(dataURL,name,objectNum,timeout = 100) {
     loadingFileIcon.visible = false;
 }
 
+function initDesktopControlerSpoofer(){
+    let controller = new Mesh(new BoxGeometry(0.01, 0.01, 0.01), new MeshLambertMaterial({ color: 0x440066 }));
+    
+    controller.userData.squeeze = false;
+    controller.userData.select = false;
+    controller.userData.grippedTool = -1; //no tool is selected
+    controller.userData.grippedObject = undefined;
+    controller.userData.pointingAtObject = undefined;
+    controller.userData.connected = true;
+
+    //set binds
+    window.addEventListener('pointerdown', () => {VRinter.selectStartController(controller);});
+    window.addEventListener('pointerup', () => {VRinter.selectEndController(controller);});
+
+    /*window.addEventListener('squeezestart', () => {});
+    window.addEventListener('squeezeend', () => {VRinter.squeezeEndController(controller);});
+    window.addEventListener('selectstart', () => {VRinter.selectStartController(controller);});
+    window.addEventListener('selectend', () => {VRinter.selectEndController(controller);});*/
+
+    OverlayScene.add(controller);
+    
+    return controller;
+}
+
 function initUI() {
     //make ui selectable on a flat screen for quick testing by defining behavior
     renderer.domElement.addEventListener(
         'mousemove',
         (event) => {
-            const mouse = {
-                x: (event.clientX / renderer.domElement.clientWidth) * 2 - 1,
-                y: -(event.clientY / renderer.domElement.clientHeight) * 2 + 1,
-            };
-            if (!renderer.xr.isPresenting) {
+            if(desktopControlerSpoofer){
+                const mouse = {
+                    x: (event.clientX / renderer.domElement.clientWidth) * 2 - 1,
+                    y: -(event.clientY / renderer.domElement.clientHeight) * 2 + 1,
+                };
+
+                //emulate vr controler so we can use the same code for both desktop and vr
                 VRinter.raycaster.setFromCamera(mouse, camera);
-                meshUI.raycastGUIelements(VRinter.raycaster);
-                return 0;
+                desktopControlerSpoofer.position.copy(VRinter.raycaster.ray.origin);
+                tempVec.copy(VRinter.raycaster.ray.origin); tempVec.sub(VRinter.raycaster.ray.direction);
+                desktopControlerSpoofer.lookAt(tempVec);
+
+                VRinter.cleanHiglighted(VRinter.higlightedObjects);
+                VRinter.controlerGetObject(desktopControlerSpoofer,VRinter.higlightedObjects,VRinter.interactiveObjectsGroup);
+                VRinter.handleToolsAnimations(desktopControlerSpoofer);
             }
-            return 1;
         },
         false,
     );
 
-    //define UI behavior
-    /*
-    let menu1Handle = meshUI.createMenu(
-        0.1, //handle height
-        0.35, //menu height
-        'OPTIONS',
-        true, //is it dragable ?
-        true, //does it reoient itself when moved to face ray origin
-    );
-    //adding buttons to menus
-    menu1Handle.userData.menu.add(
-        meshUI.addWideButton('LOAD FILE', 0.1, () => {
-            console.log('open file dialog');
-            // creating input on-the-fly
-            var input = document.createElement("input");
-            input.type = 'file';
-            input.onchange = e => {
-                let files = Array.from(input.files);
-                console.log('load files',files);
-                ([...files]).forEach(uploadFile);
-            };
-            input.click();
-        })
-    );
-
-    menu1Handle.userData.menu.add(
-        meshUI.addWideButton('LOAD CABIENT', 0.1, () => {
-            loadIFC(cabinetIFCFile, "cabinet", fileNumber);
-        }),
-    );
-
-    menu1Handle.userData.menu.add(
-        meshUI.addWideButton('LOAD CHAIR', 0.1, () => {
-            loadIFC(chairIFCFile, "chair", fileNumber);
-        }),
-    );
-    menu1Handle.position.set(1, 1.2, -1.1);
-    VRinter.userGroup.add(menu1Handle);
-    */
-
     let menu2Handle = meshUI.createMenu(
-        0.03, //handle height
+        0.04, //handle height
         0.15, //menu height
         'OPTIONS',
         false, //is it dragable ?
         false, //does it reoient itself when moved to face ray origin
     );
-    menu2Handle.position.set(0, 0.14, -0.2);
+    menu2Handle.position.set(0, 0.28, -0.4);
     GUI_Group.add(menu2Handle);
-    OverlayScene.add(GUI_Group);
-    camera.attach(GUI_Group);
-
+    
     menu2Handle.userData.menu.add(
-        meshUI.addWideButton('LOAD FILE', 0.03, () => {
+        meshUI.addWideButton('LOAD FILE', 0.04, () => {
             console.log('open file dialog');
             // creating input on-the-fly
             var input = document.createElement("input");
@@ -398,22 +405,22 @@ function initUI() {
     );
 
     menu2Handle.userData.menu.add(
-        meshUI.addWideButton('LOAD CABIENT', 0.03, () => {
+        meshUI.addWideButton('LOAD CABIENT', 0.04, () => {
             loadIFC(cabinetIFCFile, "cabinet", fileNumber);
         }),
     );
     menu2Handle.userData.menu.add(
-        meshUI.addWideButton('LOAD CHAIR', 0.03, () => {
+        meshUI.addWideButton('LOAD CHAIR', 0.04, () => {
             loadIFC(chairIFCFile, "chair", fileNumber);
         }),
     );
     menu2Handle.userData.menu.add(
-        meshUI.addWideButton('LOAD BUILDING', 0.03, () => {
+        meshUI.addWideButton('LOAD BUILDING', 0.04, () => {
             loadIFC(buildingIFCFile, "building", fileNumber);
         }),
     );
     menu2Handle.userData.menu.add(
-        meshUI.addWideButton('SHOW BVH', 0.03, () => {
+        meshUI.addWideButton('SHOW BVH', 0.04, () => {
             if(visulizeBVH == false){
                 VRinter.ModelGroup.children.forEach(object => {
                     console.log(object.name);
@@ -431,14 +438,47 @@ function initUI() {
         },true)
     );
 
+
+    
+
+    let spawnToolHandle = meshUI.createMenu(
+        0.04, //height 0.168 width
+        0.001, //menu height
+        'OBJECTS', //handle text if empty hide handle
+        true, //is it dragable ?
+        false, //does it reoient itself when moved to face ray origin
+        false, //is handle atached at the bottom
+        false, //does it have a drop down button
+    );
+    spawnToolHandle.position.set(0.367, 0.28, -0.4); spawnToolHandle.visible = false;
+    GUI_Group.add(spawnToolHandle);
+
+    OverlayScene.add(GUI_Group);
+    //camera.attach(GUI_Group);
+
     menu2Handle.userData.menu.add(
-        meshUI.addWideButton('HAND TRACKING', 0.03, () => {
-            if(handTracking){handTracking = false;}else{handTracking = true;}
+        meshUI.addWideButton('DESKTOP MODE', 0.04, () => {
+            if(desktopMode){
+                desktopMode = false;
+                VRinter.interactiveObjectsGroup.visible = true;
+
+                spawnToolHandle.visible = false;
+                VRinter.objectSpawnerTool.toolMenuHandle.position.set(-0.14,0.05,0); 
+                VRinter.objectSpawnerTool.mesh.add(VRinter.objectSpawnerTool.toolMenuHandle);
+            }else{
+                VRinter.objectSpawnerTool.toolMenuHandle.position.set(0,0,0); //VRinter.objectSpawnerTool.toolMenuHandle.quaternion.set(0,0,0,1);
+                spawnToolHandle.add(VRinter.objectSpawnerTool.toolMenuHandle);
+                spawnToolHandle.visible = true;
+                
+                VRinter.interactiveObjectsGroup.visible = false;
+                desktopMode = true;
+            }
+            //rip menus from tool handles and insert them to new handles
+            //return menus back to original position and handle
+            //hide or disable enter VR button
         },true)
     );
     menu2Handle.userData.menu.visible = true;
-    
-
 
     ThreeMeshUI.update();
 }
@@ -478,23 +518,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
 
     //setup program loop
     renderer.setAnimationLoop(()=>{
-        if (!renderer.xr.isPresenting) {
-            GUI_Group.visible = true;
-            //GUI_Group.position.copy(camera.position);
-            //GUI_Group.setRotationFromQuaternion(camera.quaternion);
-        }else{
-            GUI_Group.visible = false;
-        }
-    
-        VRinter.animate(clock);
-        renderer.clear();
-        renderer.render(scene, camera);
-        renderer.clearDepth();
-        renderer.render(OverlayScene, camera); //izrisovanje nad vsemi objekti
-
-        stats1.update();
-        stats2.update();
-        stats3.update();
+        renderScene();
     });
     setTimeout(()=>{VRinter.objectSpawnerTool.container.userData.update();},1000);
 

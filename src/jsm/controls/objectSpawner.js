@@ -67,7 +67,7 @@ class ObjectSpawner {
         this.toolMenuHandle = this.meshUI.createMenu(
             0.04, //height
             0.001, //menu height
-            'OBJECTS', //handle text if empty hide handle
+            '', //handle text if empty hide handle
             false, //is it dragable ?
             false, //does it reoient itself when moved to face ray origin
             false, //is handle atached at the bottom

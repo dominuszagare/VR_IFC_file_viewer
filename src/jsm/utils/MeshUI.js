@@ -20,7 +20,6 @@ class MeshUI {
 
         //for draging UI elements in 3D space
         this.TempPlane = new Plane();
-        this.camPoz = new Vector3(0, 1.6, 0);
         this.RayPoz = new Vector3(0, 0, 0);
         this.planeNormal = new Vector3(0, 0, 1);
         this.coplanarPoint = new Vector3(0, 0, 0);
@@ -208,7 +207,7 @@ class MeshUI {
         return slider;
     }
 
-    createMenu(height, menuHeight, text = '', draggable = true, reorient = false, handleAtBottom = false) {
+    createMenu(height, menuHeight, text = '', draggable = true, reorient = false, handleAtBottom = false, hidable = true) {
         let fontSize = height / 2;
         let margin = height / 20;
         let width = height * 4.2;
@@ -277,32 +276,34 @@ class MeshUI {
         }
         grabHandleButton.userData.menu = menuWindow;
 
-        let showHideButton = new ThreeMeshUI.Block({
-            width: height,
-            height: height,
-            justifyContent: 'center',
-            offset: 0.001,
-        });
-        showHideButton.setupState(this.hoveredStateAttributes);
-        showHideButton.setupState(this.idleWhiteStateAttributes);
-        showHideButton.setupState(this.pressedStateAttributes);
-        showHideButton.frame.userData.button = showHideButton;
-        showHideButton.frame.userData.toggle = false;
-        showHideButton.frame.userData.on = false;
-        showHideButton.frame.userData.OnClick = () => {
-            if (menuWindow.visible) menuWindow.visible = false;
-            else menuWindow.visible = true;
-        }; //hide show menu
-        this.GUI_elements.push(showHideButton.frame);
-        //add show hide button to handle
-    
-        grabHandleButton.add(showHideButton);
-        showHideButton.autoLayout = false;
-        showHideButton.position.set((width - height) / 2 + height / 2, 0, 0); //on right
-        showHideButton.setState('idle');
-        this.textureLoader.load(dropLogoImage, (texture) => {
-            showHideButton.set({ backgroundTexture: texture });
-        });
+        if(hidable){
+            let showHideButton = new ThreeMeshUI.Block({
+                width: height,
+                height: height,
+                justifyContent: 'center',
+                offset: 0.001,
+            });
+            showHideButton.setupState(this.hoveredStateAttributes);
+            showHideButton.setupState(this.idleWhiteStateAttributes);
+            showHideButton.setupState(this.pressedStateAttributes);
+            showHideButton.frame.userData.button = showHideButton;
+            showHideButton.frame.userData.toggle = false;
+            showHideButton.frame.userData.on = false;
+            showHideButton.frame.userData.OnClick = () => {
+                if (menuWindow.visible) menuWindow.visible = false;
+                else menuWindow.visible = true;
+            }; //hide show menu
+            this.GUI_elements.push(showHideButton.frame);
+            //add show hide button to handle
+        
+            grabHandleButton.add(showHideButton);
+            showHideButton.autoLayout = false;
+            showHideButton.position.set((width - height) / 2 + height / 2, 0, 0); //on right
+            showHideButton.setState('idle');
+            this.textureLoader.load(dropLogoImage, (texture) => {
+                showHideButton.set({ backgroundTexture: texture });
+            });
+        }
         return grabHandleButton;
     }
     createButtonGrid(items, itemWidth, height = 1, rows=1, toggle = false, exclusive = false, onChangeFunction = undefined) {
