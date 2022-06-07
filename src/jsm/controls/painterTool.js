@@ -69,7 +69,7 @@ class PainterTool{
 
         //TODO create better color and size selector
         this.selectorSize = this.meshUI.addSliderDiscrete(0.04,10,0.1,0.1,() => {
-            let value = selectorSize.userData.value;
+            let value = this.selectorSize.userData.value;
             this.painter.setSize(value);
             this.painterSize = value;
         });

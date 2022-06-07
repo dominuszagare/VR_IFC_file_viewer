@@ -160,7 +160,8 @@ class ObjectManipulator {
 
         const deleteButton = this.meshUI.addWideButton('DELETE', 0.04, () => {
             if(this.objectBoundingBox && this.objectModel){
-                this.objects.remove(this.objectModel);
+                this.scene.remove(this.objectModel);
+                this.scene.remove(this.objectBoundingBox);
                 this.objectBoundingBox = undefined;
                 this.objectModel = undefined;
                 this.objectSelected = false;

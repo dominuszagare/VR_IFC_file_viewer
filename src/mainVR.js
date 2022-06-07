@@ -87,6 +87,10 @@ let GUI_Group = new Group();
 OverlayScene.add(meshUI.point)
 let visulizeBVH = false;
 let visulizers = [];
+let handTracking = false;
+let desktopMode = true;
+
+var loadingModel = false;
 
 function freezeCamera() {
     CameraControl.enabled = false;
@@ -99,8 +103,8 @@ CameraControl.addEventListener('change', () => {
     if (!renderer.xr.isPresenting) camera.getWorldPosition(meshUI.camPoz);
 });
 
-window.addEventListener('pointerdown', () => {meshUI.onSelect();});
-window.addEventListener('pointerup', () => {meshUI.onRelese();});
+window.addEventListener('pointerdown', () => {if (!renderer.xr.isPresenting) meshUI.onSelect();});
+window.addEventListener('pointerup', () => {if (!renderer.xr.isPresenting) meshUI.onRelese();});
 //window.addEventListener('touchstart', () => {meshUI.onSelect();});
 //window.addEventListener('touchend', () => {meshUI.onRelese();});
 
@@ -222,6 +226,7 @@ function loadIFC(dataURL,name,objectNum,timeout = 100) {
         if(name.length > 8){name = name.slice(0,8);}
         ifcLoader.load(dataURL, (ifcModel) => {
 
+
             let mesh = ifcModel;
             console.log(ifcModel);
 
@@ -252,6 +257,8 @@ function loadIFC(dataURL,name,objectNum,timeout = 100) {
                 camera.lookAt(mesh.position);
     
                 setTimeout(()=>{
+                    while(loadingModel){}//wait until other model is loaded
+                    loadingModel = true; //block others from loading
                     renderer.render(scene, camera);
                 
                     let imgData = renderer.domElement.toDataURL("image/jpeg");
@@ -282,6 +289,7 @@ function loadIFC(dataURL,name,objectNum,timeout = 100) {
                         applayPropreties: {borderRadius: 0},
                         onClick: ()=>{if(VRinter.objectSpawnerTool.selectedObject === mesh){VRinter.objectSpawnerTool.selectedObject = undefined;}else{VRinter.objectSpawnerTool.selectedObject = mesh;}},
                     });
+                    loadingModel = false;
                 },timeout);
 
             }else{
@@ -422,6 +430,12 @@ function initUI() {
             }
         },true)
     );
+
+    menu2Handle.userData.menu.add(
+        meshUI.addWideButton('HAND TRACKING', 0.03, () => {
+            if(handTracking){handTracking = false;}else{handTracking = true;}
+        },true)
+    );
     menu2Handle.userData.menu.visible = true;
     
 
@@ -431,6 +445,12 @@ function initUI() {
 
 
 document.addEventListener("DOMContentLoaded", ()=>{
+
+    loadingFileIcon.position.set(0,0,-1);
+    loadingFileIcon.visible = false;
+    GUI_Group.add(loadingFileIcon);
+
+    loadingModel = false;
     fileNumber = parseInt(sessionStorage.getItem("fileNumber"));
     if(!(fileNumber)){
         fileNumber = 0;
@@ -449,11 +469,6 @@ document.addEventListener("DOMContentLoaded", ()=>{
             loadIFC(fileDataURL,name,i);
         }
     }
-
-    loadingFileIcon.position.set(0,0,-1);
-    loadingFileIcon.visible = false;
-    OverlayScene.add(loadingFileIcon);
-    camera.attach(loadingFileIcon);
 
     camera.position.z = 0;
     camera.position.y = 1.5;

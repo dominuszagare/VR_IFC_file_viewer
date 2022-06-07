@@ -491,6 +491,14 @@ class MeshUI {
             }
         }
     }
+
+    //press button with controler colider
+    checkButtonColision(controler){
+        array.forEach(element => {
+            this.GUI_elements
+        });
+    }
+
     //ob pritisku gumba izvedi funkcijo gumba nad katerim smo
     onSelect(renderFunction = undefined) {
         this.point.visible = false;

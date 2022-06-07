@@ -6,7 +6,7 @@ import {
     Quaternion,
     BoxGeometry,
     IcosahedronGeometry,
-    MeshToonMaterial,
+    MeshLambertMaterial,
     MeshStandardMaterial,
     Raycaster,
     AdditiveBlending,
@@ -20,15 +20,16 @@ import {
     Plane,
 } from 'three';
 import { XRControllerModelFactory } from '../../../node_modules/three/examples/jsm/webxr/XRControllerModelFactory.js';
+import { XRHandModelFactory } from '../../../node_modules/three/examples/jsm/webxr/XRHandModelFactory.js';
 import {IFCLoader} from "web-ifc-three/IFCLoader";
 import { GLTFLoader } from '../../../node_modules/three/examples/jsm/loaders/GLTFLoader.js';
 import { PainterTool } from './painterTool.js';
 import { ObjectSpawner } from './objectSpawner.js';
 import { TeleportTool } from './teleportTool.js';
 import { ObjectManipulator } from './objectManipulator.js';
-import { Utility } from '../utils/Utility.js';
 
 import interactiveObjectsModels from '../../models/gltf/cursor.glb';
+import { Sphere } from 'three';
 
 
 class VRinteraction {
@@ -69,9 +70,9 @@ class VRinteraction {
         this.higlightedObjects = [];
 
         //objects holding temp geometry until replaced with proper models
-        this.obj3Dcursor = new Mesh(new BoxGeometry(0.4, 0.4, 0.4), new MeshToonMaterial({ color: 0xff0fff }));
-        this.objCursorRing = new Mesh(new BoxGeometry(0.5, 0.5, 0.5), new MeshToonMaterial({ color: 0xff0fff }));
-        this.objCursor = new Mesh(new BoxGeometry(0.3, 0.3, 0.3), new MeshToonMaterial({ color: 0x000fff }));
+        this.obj3Dcursor = new Mesh(new BoxGeometry(0.4, 0.4, 0.4), new MeshLambertMaterial({ color: 0xff0fff }));
+        this.objCursorRing = new Mesh(new BoxGeometry(0.5, 0.5, 0.5), new MeshLambertMaterial({ color: 0xff0fff }));
+        this.objCursor = new Mesh(new BoxGeometry(0.3, 0.3, 0.3), new MeshLambertMaterial({ color: 0x000fff }));
 
         //contain all pencil tool logic in one place
         this.pencilTool = new PainterTool(scene,this.interactiveObjectsGroup,MESHUI);
@@ -80,15 +81,15 @@ class VRinteraction {
         this.objectManipulatorTool = new ObjectManipulator(this.ModelGroup,this.interactiveObjectsGroup,scene,MESHUI,this.groundPlane);
         //TODO make a inspect and mesuring tool
 
-        this.yojstickToolBase = new Mesh(new BoxGeometry(0.1, 0.1, 0.1), new MeshToonMaterial({ color: 0x440066 }));
-        this.yojstickToolHandle = new Mesh(new BoxGeometry(0.1, 0.1, 0.1), new MeshToonMaterial({ color: 0x660066 }));
+        this.yojstickToolBase = new Mesh(new BoxGeometry(0.1, 0.1, 0.1), new MeshLambertMaterial({ color: 0x440066 }));
+        this.yojstickToolHandle = new Mesh(new BoxGeometry(0.1, 0.1, 0.1), new MeshLambertMaterial({ color: 0x660066 }));
         
         this.yojstickToolBase.name = 'yojstickBase';
         this.userGroup.add(this.yojstickToolHandle);//handle is not selectable
         this.yojstickToolHandle.position.set(0.2, 0.8, -0.8);
         this.yojstickToolBase.position.set(0.2, 0.8, -0.8);
         this.interactiveObjectsGroup.add(this.yojstickToolBase);
-        this.yojstickControl = new Mesh(new SphereGeometry(0.06), new MeshToonMaterial({ color: 0x440066 }));
+        this.yojstickControl = new Mesh(new SphereGeometry(0.06), new MeshLambertMaterial({ color: 0x440066 }));
         this.yojstickControl.position.set(0.2, 0.9, -0.8);
         this.yojstickControl.name = 'yojstickControl';
         this.interactiveObjectsGroup.add(this.yojstickControl);
@@ -107,19 +108,25 @@ class VRinteraction {
         this.ifcLoader = new IFCLoader();
         this.gltfLoader = new GLTFLoader();
         this.controllerModelFactory = new XRControllerModelFactory();
-        this.utility = new Utility();
+        this.handModelFactory = new XRHandModelFactory();
         this.meshUI = MESHUI;
 
         //initial setup
 
+        this.xrRefSpace;
+        this.boxes_left = [];
+        this.boxes_right = [];
+        this.boxes = { left: this.boxes_left, right: this.boxes_right};
+
         this.controller1 = this.getAndinitilizeXRcontroller(0, this.userGroup);
         this.activeControler = this.controller1;
         this.controller2 = this.getAndinitilizeXRcontroller(1, this.userGroup);
-        this.addControllerModelAndGrip(this.controller1, 0, this.userGroup);
-        this.addControllerModelAndGrip(this.controller2, 1, this.userGroup);
-        this.initLineHelper();
+
+        this.hand1 = this.getAndinitilizeXRhand(0, this.userGroup)
+        this.hand2 = this.getAndinitilizeXRhand(1, this.userGroup)
+        
+        this.initControlersHelpers();
         this.createOverlayObjects();
-        this.controlersSetBinds(this.controller1, this.controller2);
 
         this.renderer = renderer;
         
@@ -163,79 +170,206 @@ class VRinteraction {
         this.overlay.add(this.objCursorRing);
         this.overlay.add(this.objCursor);
     }
+
+
+    getAndinitilizeXRhand(num, group){
+        let handModel = this.XR.getHand( num ); //skeleton of a hand
+        console.log(handModel);
+        handModel.add(this.handModelFactory.createHandModel( handModel));
+
+        let hand = new Mesh(new IcosahedronGeometry(0.015), new MeshLambertMaterial({ color: 0x00ff00 }));
+        handModel.add(hand);
+        hand.visible = true;
+        hand.userData.handModel = handModel; //add refrence to the hand model
+        hand.userData.quaternionSum = new Quaternion(0,0,0);
+        hand.userData.quaternionArray = [];
+        hand.userData.quaternionIndex = 0;
+
+        hand.userData.num = num;
+        hand.userData.pointing = false; //pointer finger not curled into the hand with other fingers
+        hand.userData.squeeze = false; //all fingers curled into the hand
+        hand.userData.select = false; //fingers pinched together
+        hand.userData.grippedTool = -1; //no tool is selected
+        hand.userData.grippedObject = undefined;
+        hand.userData.pointingAtObject = undefined;
+        hand.userData.pressedObject = undefined; //pointer finger is intersecting with an object
+        hand.userData.connected = true;
+        hand.userData.selectCooldown = false;
+        hand.userData.squeezeCooldown = false;
+
+        group.add(handModel);
+        return hand;
+    }
+
+    checkForHandActions(hand){
+        if(hand.userData.connected == false){
+            return;
+        }
+        if(!hand.userData.handModel.joints[ 'index-finger-tip' ]){
+            return;
+        }
+        this.controller1.userData.connected = false; this.controller1.visible = false;
+        this.controller2.userData.connected = false; this.controller2.visible = false;
+        
+        //console.log(hand);
+        const indexTip = hand.userData.handModel.joints[ 'index-finger-tip' ];
+        const indexPalm = hand.userData.handModel.joints[ 'index-finger-metacarpal' ];
+        const middleTip = hand.userData.handModel.joints[ 'middle-finger-tip' ];
+        const middlePalm = hand.userData.handModel.joints[ 'middle-finger-metacarpal' ];
+        const ringTip = hand.userData.handModel.joints[ 'ring-finger-tip' ];
+        const ringPalm = hand.userData.handModel.joints[ 'ring-finger-metacarpal' ];
+        const pinkyTip = hand.userData.handModel.joints[ 'pinky-finger-tip' ];
+        const pinkyPalm = hand.userData.handModel.joints[ 'pinky-finger-metacarpal' ];
+        const thumbTip = hand.userData.handModel.joints[ 'thumb-tip' ];
+        const indexIntermidiate = hand.userData.handModel.joints[ 'index-finger-phalanx-intermediate'];
+        const middleIntermidiate = hand.userData.handModel.joints[ 'middle-finger-phalanx-intermediate'];
+
+
+		const distanceIndex = indexTip.position.distanceTo( indexPalm.position);
+        const distanceMiddle = middleTip.position.distanceTo( middlePalm.position );
+        const distanceRing = ringTip.position.distanceTo( ringPalm.position );
+        const distancePinky = pinkyTip.position.distanceTo( pinkyPalm.position);
+        const distancePinch = thumbTip.position.distanceTo( indexTip.position);
+        const distanceThumbTrigger = thumbTip.position.distanceTo( indexIntermidiate.position);
+        //const distanceTrigger2 = 1;//thumbTip.position.distanceTo( middleIntermidiate.position);
+
+        
+
+        if(distanceMiddle < 0.05 && distanceRing < 0.05 && distancePinky < 0.05 && distanceIndex > 0.1){
+            hand.userData.pointing = true;
+        }else{   
+            hand.userData.pointing = false;
+        }
+        hand.userData.quaternionSum.x += indexPalm.quaternion.x;
+        hand.userData.quaternionSum.y += indexPalm.quaternion.y; 
+        hand.userData.quaternionSum.z += indexPalm.quaternion.z;
+        hand.userData.quaternionSum.w += indexPalm.quaternion.w;
+
+        if(hand.userData.quaternionArray[hand.userData.quaternionIndex]){
+            hand.userData.quaternionArray[hand.userData.quaternionIndex].copy(indexPalm.quaternion);
+        }else{
+            hand.userData.quaternionArray.push(indexPalm.quaternion.clone());
+        }
+
+
+        hand.position.copy(indexPalm.position); //update hand position to match the model
+
+        hand.userData.quaternionIndex += 1;
+        if(hand.userData.quaternionIndex > 10){
+            hand.userData.quaternionIndex = 0;
+        }
+        if(hand.userData.quaternionArray[hand.userData.quaternionIndex]){
+            hand.userData.quaternionSum.x -= hand.userData.quaternionArray[hand.userData.quaternionIndex].x;
+            hand.userData.quaternionSum.y -= hand.userData.quaternionArray[hand.userData.quaternionIndex].y;
+            hand.userData.quaternionSum.z -= hand.userData.quaternionArray[hand.userData.quaternionIndex].z;
+            hand.userData.quaternionSum.w -= hand.userData.quaternionArray[hand.userData.quaternionIndex].w;
+        }
+
+        hand.quaternion.set(hand.userData.quaternionSum.x/10,hand.userData.quaternionSum.y/10,hand.userData.quaternionSum.z/10,hand.userData.quaternionSum.w/10);
+        if(hand.userData.num == 0){ //right hand
+            hand.translateZ(-0.13);
+            hand.translateX(-0.01);
+            hand.translateY(-0.01);
+            hand.rotateZ(Math.PI/-2);
+            hand.rotateX(Math.PI/-6);
+        }else{
+            hand.translateZ(-0.13);
+            hand.translateX(0.01);
+            hand.translateY(-0.01);
+            hand.rotateZ(Math.PI/2);
+            hand.rotateX(Math.PI/-6);
+        }
+         //rotate hand to match the model
+        //hand.rotateX(-Math.PI/4);
+
+        //grab action
+        if(hand.userData.squeeze == false && distanceMiddle < 0.05 && distanceRing < 0.05 && distancePinky < 0.05){
+            hand.userData.squeeze = true;
+            this.squeezeStartController(hand);
+        }
+        if (hand.userData.squeeze == true && distanceMiddle > 0.06 && distanceRing > 0.06 && distancePinky > 0.06){
+            hand.userData.squeeze = false;
+            this.squeezeEndController(hand);
+        }
+
+
+
+        if(hand.userData.select == false && distanceThumbTrigger < 0.02){
+            hand.userData.select = true;
+            hand.scale.set(0.5,0.5,0.5);
+            this.selectStartController(hand);
+            
+        }
+        if(hand.userData.select == true && distanceThumbTrigger > 0.03){
+            hand.userData.select = false;
+            hand.scale.set(1,1,1);
+            this.selectEndController(hand);
+        }
+    }
+
     getAndinitilizeXRcontroller(num, group) {
         let controller = this.XR.getController(num);
+        console.log(controller);
+        
+        let controllerGrip = this.XR.getControllerGrip(num);
+        controllerGrip.add(this.controllerModelFactory.createControllerModel(controllerGrip));
+        controller.userData.grip = controllerGrip; //test if this works for referencing grip object
+
         controller.userData.squeeze = false;
         controller.userData.select = false;
         controller.userData.grippedTool = -1; //no tool is selected
         controller.userData.grippedObject = undefined;
         controller.userData.pointingAtObject = undefined;
+        controller.userData.connected = false;
+
+        //set binds
+        controller.addEventListener('connected',()=>{controller.userData.connected = true; controller.visible = true;});
+        controller.addEventListener('disconnected',()=>{controller.userData.connected = false; controller.visible = false;});
+        controller.addEventListener('squeezestart', () => {this.squeezeStartController(controller);});
+        controller.addEventListener('squeezeend', () => {this.squeezeEndController(controller);});
+        controller.addEventListener('selectstart', () => {this.selectStartController(controller);});
+        controller.addEventListener('selectend', () => {this.selectEndController(controller);});
+
+        group.add(controllerGrip);
         group.add(controller);
+        
         return controller;
     }
-    addControllerModelAndGrip(controller, gripNum, group) {
-        //function load controler model and add grip
-        let controllerGrip = this.XR.getControllerGrip(gripNum);
-        controllerGrip.add(this.controllerModelFactory.createControllerModel(controllerGrip));
-        controller.userData.grip = controllerGrip; //test if this works for referencing grip object
-        group.add(controllerGrip);
-    }
-    initLineHelper() {
+
+    initControlersHelpers() {
         //pointer line helpers
         let line = new Line(new BufferGeometry().setFromPoints([new Vector3(0, 0, 0), new Vector3(0, 0, -1)]));
         line.name = 'line';
         line.scale.z = 1;
-        this.controller1.add(line.clone());
-        this.controller2.add(line.clone());
+        //let sphere = new Sphere(new Vector3(0,0,0),0.06); //create a sphere for coliding with objects
+        //sphere.name = 'sphere';
+
+
+        this.controller1.add(line.clone()); //this.controller1.add(sphere.clone());
+        this.controller2.add(line.clone()); //this.controller2.add(sphere.clone());
+        this.hand1.add(line.clone()); //this.hand1.add(sphere.clone());
+        this.hand2.add(line.clone()); //this.hand2.add(sphere.clone());
     }
 
-    controlersSetBinds(controller1, controller2) {
-        controller1.addEventListener('squeezestart', () => {
-            this.squeezeStartController(controller1);
-        });
-        controller1.addEventListener('squeezeend', () => {
-            this.squeezeEndController(controller1);
-        });
-        controller1.addEventListener('selectstart', () => {
-            this.selectStartController(controller1);
-        });
-        controller1.addEventListener('selectend', () => {
-            this.selectEndController(controller1);
-        });
-        controller2.addEventListener('squeezestart', () => {
-            this.squeezeStartController(controller2);
-        });
-        controller2.addEventListener('squeezeend', () => {
-            this.squeezeEndController(controller2);
-        });
-        controller2.addEventListener('selectstart', () => {
-            this.selectStartController(controller2);
-        });
-        controller2.addEventListener('selectend', () => {
-            this.selectEndController(controller2);
-        });
-    }
     squeezeStartController(controller) {
+        if(controller.userData.connected == false){return;}
         controller.userData.squeeze = true;
         this.gripObject(controller);
         if (this.activeControler == controller) {
             this.meshUI.onSelectAlternative(); //<--preform button alternative function if howering over one
         }
         //switch active controller
-        if (controller.userData.grippedObject == undefined) {
-            this.activeControler = controller;
-        } else {
-            if (controller == this.controller1) this.activeControler = this.controller2;
-            if (controller == this.controller2) this.activeControler = this.controller1;
-        }
+        this.activeControler = controller;
 
     }
     squeezeEndController(controller) {
+        if(controller.userData.connected == false){return;}
         controller.userData.squeeze = false;
         this.hideHelperItems(controller); //hides relevant items
         this.controlerReleseObject(controller);
     }
     selectStartController(controller) {
+        if(controller.userData.connected == false){return;}
         controller.userData.select = true;
         if (controller.userData.grippedObject != undefined) {
             this.toolActionOnSelect(controller);
@@ -244,14 +378,10 @@ class VRinteraction {
             this.meshUI.onSelect(); //<--preform button function if howering over one
         }
         //switch active controller
-        if (controller.userData.grippedObject == undefined) {
-            this.activeControler = controller;
-        } else {
-            if (controller == this.controller1) this.activeControler = this.controller2;
-            if (controller == this.controller2) this.activeControler = this.controller1;
-        }
+        this.activeControler = controller;
     }
     selectEndController(controller) {
+        if(controller.userData.connected == false){return;}
         controller.userData.select = false;
         if (this.activeControler == controller) {
             this.meshUI.onRelese();
@@ -259,10 +389,10 @@ class VRinteraction {
         if (controller.userData.grippedObject != undefined) {
             this.toolActionOnSelectEnd(controller);
         }
-
     }
 
     onControllerSelectRelease(controller) {
+        if(controller.userData.connected == false){return;}
         //!Cant grab anything outside the interactiveObjectsGroup. So after relese always return it to the interactiveObjectsGroup
         if (controller.userData.grippedObject != undefined) {
             let object = controller.userData.grippedObject;
@@ -273,6 +403,7 @@ class VRinteraction {
     gripObject(controller) {
         //check if object can be grabed
         //const found = this.ControllerGetObjects(controller,this.interactiveObjectsGroup);
+        if(controller.userData.connected == false){return;}
         let object = controller.userData.pointingAtObject;
         if (object != undefined) {
 
@@ -349,6 +480,7 @@ class VRinteraction {
     }
 
     showHelperItmes(controller) {
+        if(controller.userData.connected == false){return;}
         //glede na oporabljeno orodje prikazi dolocene objekte menije ...
         if (controller.userData.grippedTool == 0) {
             this.teleporterTool.toolShowHelperItems();
@@ -358,6 +490,7 @@ class VRinteraction {
         }
     }
     hideHelperItems(controller) {
+        if(controller.userData.connected == false){return;}
         if (controller.userData.grippedTool == 0) {
             this.teleporterTool.toolHideHelperItems();
         }
@@ -370,6 +503,7 @@ class VRinteraction {
     }
 
     controlerReleseObject(controller) {
+        if(controller.userData.connected == false){return;}
         if (controller.userData.grippedObject !== undefined) {
             const object = controller.userData.grippedObject;
             const parent = object.userData.returnTo;
@@ -387,14 +521,12 @@ class VRinteraction {
     }
     //TODO snap elevation of teleport marker to local geometry and test
     toolActionOnSelect(controller) {
+        if(controller.userData.connected == false){return;}
         //initial action when main button is pressed
         if (controller.userData.grippedTool == 0) {
             this.teleporterTool.toolAction();
         } else if (controller.userData.grippedTool == 1) {
             this.pencilTool.updatePivotPosition();
-        } else if (controller.userData.grippedTool == 2) {
-            this.yojstickToolBase.updatePivotPosition();
-            this.yojstickControl.updatePivotPosition();
         } else if (controller.userData.grippedTool == 4) {
             this.objectSpawnerTool.toolAction();
         } else if (controller.userData.grippedTool == 5) {
@@ -402,11 +534,13 @@ class VRinteraction {
         }
     }
     toolActionOnSelectEnd(controller) {
+        if(controller.userData.connected == false){return;}
         if (controller.userData.grippedTool == 1) { //when finishing a stroke
             this.pencilTool.toolActionEnd();
         }
     }
     handleToolsAnimations(controller) {
+        if(controller.userData.connected == false){return;}
         //will execute each frame (be cerful to not perform expensive operations)
         if (controller.userData.grippedTool == 1 && controller.userData.select) {//when controler triger is pressed and pencil is gripped
             this.pencilTool.toolAction();
@@ -418,7 +552,7 @@ class VRinteraction {
             controller.getWorldPosition(this.tempVecP);
             this.yojstickToolBase.getWorldPosition(this.tempVecP2);
             this.tempVecP.sub(this.tempVecP2);
-            if(this.tempVecP.length() > 0.5){
+            if(this.tempVecP.length() > 0.3){
                 this.controlerReleseObject(controller);
             }
             else{
@@ -435,7 +569,7 @@ class VRinteraction {
         }
     }
 
-    controlerCheckColision(controller,group){ 
+    controlerNearby(controller,group){
         let colision = [];
         for (const child of group.children) { //ceck if the controller is inside the sphere of influance
             controller.getWorldPosition(this.tempVecP);
@@ -448,10 +582,11 @@ class VRinteraction {
     }
     //shoots a ray from a controler and checks if it intersects any interactive objects also checks if the tip of the controler is touching the object
     controlerGetObject(controller, higlightedObjects, group) {
+        if(controller.userData.connected == false){return;}
         //show that object can be interacted with by changing its collor when its being pointed at
         if (controller.userData.grippedObject !== undefined) return;
         const line = controller.getObjectByName('line');
-        let found = this.controlerCheckColision(controller,group);
+        let found = this.controlerNearby(controller,group);
         
         if (found.length === 0 && controller === this.activeControler) { //if not enoraching on any object try raycasting
             this.tempMatrix.identity().extractRotation(controller.matrixWorld); //shoot a ray from a controller and find if it intersacts with a interactable object
@@ -459,6 +594,7 @@ class VRinteraction {
             this.raycaster.ray.direction.set(0, 0, -1).applyMatrix4(this.tempMatrix);
 
             this.meshUI.raycastGUIelements(this.raycaster); //check if the raycast hits any gui elements
+
 
             found = this.raycaster.intersectObjects(group.children, false); //do not use recursion to check for children of group.children
         }
@@ -501,9 +637,17 @@ class VRinteraction {
             this.cleanHiglighted(this.higlightedObjects);
             this.controlerGetObject(this.controller1, this.higlightedObjects, this.interactiveObjectsGroup);
             this.controlerGetObject(this.controller2, this.higlightedObjects, this.interactiveObjectsGroup);
+            this.controlerGetObject(this.hand1, this.higlightedObjects, this.interactiveObjectsGroup);
+            this.controlerGetObject(this.hand2, this.higlightedObjects, this.interactiveObjectsGroup);
+
+            this.checkForHandActions(this.hand1);
+            this.checkForHandActions(this.hand2);
 
             this.handleToolsAnimations(this.controller1);
             this.handleToolsAnimations(this.controller2);
+            this.handleToolsAnimations(this.hand1);
+            this.handleToolsAnimations(this.hand2);
+
         }
 
         const delta = clock.getDelta();
