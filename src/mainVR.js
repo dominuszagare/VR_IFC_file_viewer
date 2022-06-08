@@ -12,7 +12,8 @@ import {
     BoxGeometry,
     MeshLambertMaterial,
     Group,
-    GridHelper
+    GridHelper,
+    Mesh,
 } from 'three';
 import { OrbitControls } from '../node_modules/three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from '../node_modules/three/examples/jsm/loaders/GLTFLoader.js';
@@ -29,8 +30,9 @@ import exampleIFCFile from './models/ifc/test.ifc';
 import cabinetIFCFile from './models/ifc/cabinet.ifc';
 import chairIFCFile from './models/ifc/grace.ifc';
 import buildingIFCFile from './models/ifc/building.ifc';
-import { Object3D } from 'three';
-import { Mesh } from 'three';
+
+import iconImageNewGeom from './images/newGeom.png';
+import iconImageMove from './images/move.png';
 
 /*
 This javascript initialises s scene and controls for usage in virtual reality
@@ -44,17 +46,17 @@ document.body.setAttribute('style', 'margin: 0; overflow: hidden;');
 
 var stats1 = new Stats();
 stats1.showPanel(0); // Panel 0 = fps
-stats1.domElement.style.cssText = 'position:absolute;top:0px;left:0px;';
+stats1.domElement.style.cssText = 'position:absolute;bottom:20px;left:0px;';
 document.body.appendChild(stats1.domElement);
 
 var stats2 = new Stats();
 stats2.showPanel(2); // Panel 2 = mb
-stats2.domElement.style.cssText = 'position:absolute;top:0px;left:80px;';
+stats2.domElement.style.cssText = 'position:absolute;bottom:20px;left:160px;';
 document.body.appendChild(stats2.domElement);
 
 var stats3 = new Stats();
 stats3.showPanel(1); // Panel 3 = ms
-stats3.domElement.style.cssText = 'position:absolute;top:48px;left:0px;';
+stats3.domElement.style.cssText = 'position:absolute;bottom:20px;left:80px;';
 document.body.appendChild(stats3.domElement);
 
 //global varible and object declarations ****************************************************
@@ -80,7 +82,7 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-const CameraControl = new OrbitControls(camera, renderer.domElement);
+const CameraControl = new OrbitControls(camera, renderer.domElement); CameraControl.listenToKeyEvents(window);
 const gltfLoader = new GLTFLoader();
 const ifcLoader = new IFCLoader();
 ifcLoader.ifcManager.setWasmPath("./");
@@ -91,9 +93,13 @@ OverlayScene.add(meshUI.point)
 let visulizeBVH = false;
 let visulizers = [];
 let desktopMode = false;
+let desktopModeButton = undefined;
 let tempVec = new Vector3();
 
 var loadingModel = false;
+var first_dblclick = true;
+var enteredVRmode = true;
+var saveModelsToStorage = false;
 
 function freezeCamera() {
     CameraControl.enabled = false;
@@ -139,20 +145,22 @@ function sceneInit(objectGroup) {
 }
 
 let desktopControlerSpoofer = initDesktopControlerSpoofer();
+VRinter.userGroup.add(desktopControlerSpoofer);
 //create buttons to switch between tools 
 
 function renderScene(){
     if (!renderer.xr.isPresenting) {
+        if(enteredVRmode == true){
+            enteredVRmode = false; if(desktopMode == false){desktopModeButton.frame.userData.OnClick();}
+            //reset user position to not break the camera control
+            VRinter.userGroup.position.set(0, 0, 0);
+        }
         GUI_Group.visible = true;
         GUI_Group.position.copy(camera.position);
         GUI_Group.quaternion.copy(camera.quaternion);
     }else{
+        if(enteredVRmode == false){enteredVRmode = true; if(desktopMode){desktopModeButton.frame.userData.OnClick();}}
         GUI_Group.visible = false;
-    }
-
-    if(desktopMode){
-        //desktop mode continuos animations
-    }else{
         VRinter.animate(clock);
     }
     renderer.clear();
@@ -166,8 +174,8 @@ function renderScene(){
 }
 
 
-
 let fileNumber = 0;
+
 
 //prevent default behavior like opening files in the browser
 ;['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -252,8 +260,8 @@ function loadIFC(dataURL,name,objectNum,timeout = 100) {
             if(!(sessionStorage.getItem("recent-file-image-"+objectNum))){
                 //add to scene take a picture of the model and remove it from the scene
                 console.log("new image");
-    
-                sessionStorage.setItem("recent-file-Data-URL-"+objectNum, dataURL); //store
+                
+                if(saveModelsToStorage) sessionStorage.setItem("recent-file-Data-URL-"+objectNum, dataURL); //store model
                 sessionStorage.setItem("recent-file-name-"+objectNum, name);
                 //get object image
                 var width = 300;
@@ -298,8 +306,10 @@ function loadIFC(dataURL,name,objectNum,timeout = 100) {
     
                     renderer.clear();
                     renderer.clearDepth();
+                    
                     fileNumber += 1;
                     sessionStorage.setItem("fileNumber", fileNumber.toString());
+                    
     
                     //update options in object spawner
                     VRinter.objectSpawnerTool.addItem({
@@ -332,6 +342,7 @@ function loadIFC(dataURL,name,objectNum,timeout = 100) {
 
 function initDesktopControlerSpoofer(){
     let controller = new Mesh(new BoxGeometry(0.01, 0.01, 0.01), new MeshLambertMaterial({ color: 0x440066 }));
+    controller.visible = false;
     
     controller.userData.squeeze = false;
     controller.userData.select = false;
@@ -339,10 +350,17 @@ function initDesktopControlerSpoofer(){
     controller.userData.grippedObject = undefined;
     controller.userData.pointingAtObject = undefined;
     controller.userData.connected = true;
+    controller.userData.intersectingGUI = false;
 
     //set binds
-    window.addEventListener('pointerdown', () => {VRinter.selectStartController(controller);});
-    window.addEventListener('pointerup', () => {VRinter.selectEndController(controller);});
+    window.addEventListener('mousedown', () => {VRinter.selectStartController(controller);});
+    window.addEventListener('mouseup', () => {VRinter.selectEndController(controller);});
+    window.addEventListener('dblclick', () => {
+        if(first_dblclick){meshUI.onSelectAlternative(); first_dblclick = false;}
+        else{meshUI.onReleseAlternative(); first_dblclick = true;}
+    });
+
+      
 
     /*window.addEventListener('squeezestart', () => {});
     window.addEventListener('squeezeend', () => {VRinter.squeezeEndController(controller);});
@@ -453,34 +471,98 @@ function initUI() {
     spawnToolHandle.position.set(0.367, 0.28, -0.4); spawnToolHandle.visible = false;
     GUI_Group.add(spawnToolHandle);
 
+    let moveToolHandle = meshUI.createMenu(0.04,0.001,'MOVE',true,false,false,false);
+    moveToolHandle.position.set(0.367, 0.28, -0.4); moveToolHandle.visible = false;
+    GUI_Group.add(moveToolHandle);
+
+    let toolsHandle = meshUI.createMenu(0.03,0.18,'TOOLS',true,false,false,false);
+    toolsHandle.position.set(-0.367, 0.29, -0.4); toolsHandle.visible = false; toolsHandle.userData.menu.visible = true;
+    toolsHandle.userData.menu.set({width: 0.096}); toolsHandle.userData.menu.position.x = 0;
+    GUI_Group.add(toolsHandle);
+
+    let toolButtons = [];
+
+    let objectSpawnerButton = meshUI.addSquareImageButton(0.08,'',iconImageNewGeom,()=>{
+        toolButtons.forEach(button => {if(button != objectSpawnerButton){button.frame.userData.on = false; button.userData.handle.visible = false; button.setState('idle');}}); //setState to idle
+        if(desktopControlerSpoofer.userData.grippedTool ==  4){
+            controlerSpoofferRelease();
+        }else{
+            controlerSpoofferRelease(); objectSpawnerButton.userData.handle.visible = true;
+            desktopControlerSpoofer.userData.pointingAtObject = VRinter.objectSpawnerTool.mesh;
+            controlerSpofferGrab();
+        }
+
+    },true);
+    toolButtons.push(objectSpawnerButton); objectSpawnerButton.userData.handle = spawnToolHandle;
+    toolsHandle.userData.menu.add(objectSpawnerButton);
+
+    let objectManipulatorButton = meshUI.addSquareImageButton(0.08,'',iconImageMove,()=>{
+        toolButtons.forEach(button => {if(button != objectManipulatorButton){button.frame.userData.on = false; button.userData.handle.visible = false; button.setState('idle');}}); //setState to idle
+        if(desktopControlerSpoofer.userData.grippedTool ==  5){
+            controlerSpoofferRelease();
+        }else{
+            controlerSpoofferRelease(); objectManipulatorButton.userData.handle.visible = true;
+            desktopControlerSpoofer.userData.pointingAtObject = VRinter.objectManipulatorTool.mesh;
+            controlerSpofferGrab();
+
+        }
+    },true);
+    toolButtons.push(objectManipulatorButton); objectManipulatorButton.userData.handle = moveToolHandle;
+    toolsHandle.userData.menu.add(objectManipulatorButton);
+
     OverlayScene.add(GUI_Group);
     //camera.attach(GUI_Group);
 
-    menu2Handle.userData.menu.add(
-        meshUI.addWideButton('DESKTOP MODE', 0.04, () => {
-            if(desktopMode){
-                desktopMode = false;
-                VRinter.interactiveObjectsGroup.visible = true;
+    desktopModeButton = meshUI.addWideButton('DESKTOP MODE', 0.04, () => {
+        if(desktopMode){
+            controlerSpoofferRelease();
+            toolButtons.forEach(button => {button.frame.userData.on = false; button.userData.handle.visible = false; button.setState('idle');}); //deselect all
+            desktopMode = false; desktopModeButton.frame.userData.on = false; desktopModeButton.setState('idle');
+            VRinter.userGroup.visible = true;
 
-                spawnToolHandle.visible = false;
-                VRinter.objectSpawnerTool.toolMenuHandle.position.set(-0.14,0.05,0); 
-                VRinter.objectSpawnerTool.mesh.add(VRinter.objectSpawnerTool.toolMenuHandle);
-            }else{
-                VRinter.objectSpawnerTool.toolMenuHandle.position.set(0,0,0); //VRinter.objectSpawnerTool.toolMenuHandle.quaternion.set(0,0,0,1);
-                spawnToolHandle.add(VRinter.objectSpawnerTool.toolMenuHandle);
-                spawnToolHandle.visible = true;
-                
-                VRinter.interactiveObjectsGroup.visible = false;
-                desktopMode = true;
-            }
-            //rip menus from tool handles and insert them to new handles
-            //return menus back to original position and handle
-            //hide or disable enter VR button
-        },true)
-    );
+            spawnToolHandle.visible = false; toolsHandle.visible = false; moveToolHandle.visible = false;
+            VRinter.objectSpawnerTool.toolMenuHandle.position.set(-0.14,0.05,0); 
+            VRinter.objectSpawnerTool.mesh.add(VRinter.objectSpawnerTool.toolMenuHandle);
+
+            VRinter.objectManipulatorTool.toolMenuHandle.position.set(-0.14,0.05,0); 
+            VRinter.objectManipulatorTool.mesh.add(VRinter.objectManipulatorTool.toolMenuHandle);
+        }else{
+            VRinter.objectSpawnerTool.toolMenuHandle.position.set(0,0,0); //VRinter.objectSpawnerTool.toolMenuHandle.quaternion.set(0,0,0,1);
+            spawnToolHandle.add(VRinter.objectSpawnerTool.toolMenuHandle);
+             
+            VRinter.objectManipulatorTool.toolMenuHandle.position.set(0,0,0); //VRinter.objectSpawnerTool.toolMenuHandle.quaternion.set(0,0,0,1);
+            moveToolHandle.add(VRinter.objectManipulatorTool.toolMenuHandle);
+            
+            toolsHandle.visible = true;
+            VRinter.userGroup.visible = false;
+            desktopMode = true; desktopModeButton.frame.userData.on = true; desktopModeButton.setState('pressed');
+        }
+        //rip menus from tool handles and insert them to new handles
+        //return menus back to original position and handle
+        //hide or disable enter VR button
+    },true)
+    menu2Handle.userData.menu.add(desktopModeButton);
+
+    menu2Handle.userData.menu.add(meshUI.addWideButton('SAVE MODEL', 0.04, () => {
+        if(saveModelsToStorage){saveModelsToStorage = false;}else{saveModelsToStorage = true;}
+    },true));
+
     menu2Handle.userData.menu.visible = true;
 
     ThreeMeshUI.update();
+}
+
+function controlerSpoofferRelease(){
+    desktopControlerSpoofer.userData.squeeze = false;
+    VRinter.hideHelperItems(desktopControlerSpoofer); //hides relevant items
+    if(desktopControlerSpoofer.userData.grippedObject)desktopControlerSpoofer.userData.grippedObject.userData.UI.userData.menu.visible = false;
+    VRinter.controlerReleseObject(desktopControlerSpoofer);
+}
+
+function controlerSpofferGrab(){
+    desktopControlerSpoofer.userData.squeeze = true;
+    VRinter.gripObject(desktopControlerSpoofer);
+    if(desktopControlerSpoofer.userData.grippedObject)desktopControlerSpoofer.userData.grippedObject.userData.UI.userData.menu.visible = true;
 }
 
 

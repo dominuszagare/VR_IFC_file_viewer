@@ -68,7 +68,7 @@ class MeshUI {
             state: 'pressed',
             attributes: {
                 offset: 0.0001,
-                backgroundColor: new Color(0x999999),
+                backgroundColor: new Color(0x992299),
                 backgroundOpacity: 1,
                 fontColor: new Color(0xffffff),
             },
@@ -76,7 +76,7 @@ class MeshUI {
     }
 
     //returns a button with all needed constructs
-    addWideButton(textString, height, onClick = undefined, toggle = false) {
+    addWideButton(textString, height, onClick = undefined, toggle = false, onClickAlternative = undefined) {
         let fontSize = height / 2;
         let margin = height / 20;
         let borderRadius = height / 6;
@@ -102,14 +102,14 @@ class MeshUI {
         button.name = 'button';
         button.frame.userData.button = button;
         button.frame.userData.OnClick = onClick;
-        button.frame.userData.OnClickAlternative = undefined;
+        button.frame.userData.OnClickAlternative = onClickAlternative;
         button.frame.userData.toggle = toggle;
         button.frame.userData.on = false;
         button.setState('idle');
 
         return button;
     }
-    addSquareImageButton(height, textString, imageURL, onClick = undefined, toggle = false) {
+    addSquareImageButton(height, textString, imageURL, onClick = undefined, toggle = false, onClickAlternative = undefined) {
         let fontSize = height / 4;
         let margin = height / 20;
         let borderRadius = height / 6;
@@ -127,13 +127,11 @@ class MeshUI {
         });
         const text = new ThreeMeshUI.Text({ content: textString, offset: 0.001 });
         button.add(text);
-        button.setupState(this.hoveredStateAttributes);
         button.setupState(this.idleWhiteStateAttributes);
-        button.setupState(this.pressedStateAttributes);
         button.name = 'buttonSquare';
         button.frame.userData.button = button;
         button.frame.userData.OnClick = onClick;
-        button.frame.userData.OnClickAlternative = undefined;
+        button.frame.userData.OnClickAlternative = onClickAlternative;
         button.frame.userData.toggle = toggle;
         button.frame.userData.on = false;
         if(imageURL.length == 0){button.setupState(this.idleStateAttributes);}else{
@@ -141,6 +139,13 @@ class MeshUI {
                 button.set({ backgroundTexture: texture });
             });
         }
+
+        if(onClick != undefined){
+            button.setupState(this.hoveredStateAttributes);
+            button.setupState(this.pressedStateAttributes);
+            this.GUI_elements.push(button.frame);
+        }
+
         this.GUI_elements.push(button.frame);
         button.setState('idle');
 
@@ -207,7 +212,7 @@ class MeshUI {
         return slider;
     }
 
-    createMenu(height, menuHeight, text = '', draggable = true, reorient = false, handleAtBottom = false, hidable = true) {
+    createMenu(height, menuHeight, text = '', draggable = true, reorient = false, handleAtBottom = false, hidable = true, onClick = undefined) {
         let fontSize = height / 2;
         let margin = height / 20;
         let width = height * 4.2;
@@ -235,8 +240,8 @@ class MeshUI {
             grabHandleButton.frame.userData.reorient = reorient;
             grabHandleButton.frame.userData.toggle = false;
             grabHandleButton.frame.userData.on = false;
-            grabHandleButton.frame.userData.OnClick = () => {this.StartDragingItem(grabHandleButton);};
-            grabHandleButton.frame.userData.OnClickAlternative = undefined;
+            grabHandleButton.frame.userData.OnClick = onClick;
+            grabHandleButton.frame.userData.OnClickAlternative = () => {this.StartDragingItem(grabHandleButton);};
 
             this.GUI_elements.push(grabHandleButton.frame);
         }
@@ -415,6 +420,7 @@ class MeshUI {
     //raycast GUI elements and execute draging, howering, and clicking logic
     raycastGUIelements(raycaster, renderFunction=undefined) {
         //clean up elements
+        let ret = false;
         if (this.HighlitedGUIelements.length > 0) {
             let object = this.HighlitedGUIelements.pop();
             if (object.userData.toggle && object.userData.on) {
@@ -472,6 +478,7 @@ class MeshUI {
 
                 const ui = raycaster.intersectObjects(visibleGUIelements, false);
                 if (ui.length > 0) {
+                    ret = true;
                     this.RayPoz.copy(raycaster.ray.origin);
                     let object = ui[0].object;
                     this.point.position.copy(ui[0].point);
@@ -491,6 +498,7 @@ class MeshUI {
                 }
             }
         }
+        return ret;
     }
 
     //press button with controler colider
@@ -505,9 +513,8 @@ class MeshUI {
         this.point.visible = false;
         if (this.HoveredGUIobject != undefined) {
             this.HoveredGUIobject.userData.button.setState('pressed');
-            if (this.HoveredGUIobject.userData != undefined) {
-                this.HoveredGUIobject.userData.OnClick();
-            }
+            if(this.HoveredGUIobject.userData.OnClick != undefined) this.HoveredGUIobject.userData.OnClick();
+
             if (this.HoveredGUIobject.userData.on) {
                 this.HoveredGUIobject.userData.on = false;
             } else {
@@ -521,9 +528,8 @@ class MeshUI {
         this.point.visible = false;
         if (this.HoveredGUIobject != undefined) {
             this.HoveredGUIobject.userData.button.setState('pressed');
-            if (this.HoveredGUIobject.userData.OnClickAlternative != undefined) {
-                this.HoveredGUIobject.userData.OnClickAlternative();
-            }
+            if (this.HoveredGUIobject.userData.OnClickAlternative != undefined) this.HoveredGUIobject.userData.OnClickAlternative();
+
             if (this.HoveredGUIobject.userData.on) {
                 this.HoveredGUIobject.userData.on = false;
             } else {
@@ -533,9 +539,12 @@ class MeshUI {
             if(renderFunction)renderFunction(); //show changes
         }
     }
-    onRelese() {
+    onReleseAlternative(){
         this.DragedGUIobject = undefined;
         this.unfreezeCam();
+    }
+    onRelese() {
+        
     }
     update(){
         ThreeMeshUI.update();

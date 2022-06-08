@@ -1,7 +1,6 @@
 import { Vector3, IcosahedronGeometry, Raycaster, Line, BufferGeometry, Matrix4, Mesh, BoxGeometry,MeshLambertMaterial,Box3, DoubleSide } from "three";
 
 import cubeThumbnailImage from "../../images/cubeThumbnail.jpg"
-import sphereThumbnailImage from "../../images/sphereThumbnail.png"
 
 import { MeshBVH, acceleratedRaycast } from 'three-mesh-bvh';
 // Add the raycast function. Assumes the BVH is available on
@@ -53,16 +52,8 @@ class ObjectSpawner {
             mesh: cubeMesh,
             onClick: () => {if(this.selectedObject === cubeMesh){this.selectedObject = undefined;}else{this.selectedObject = cubeMesh;}},
         };
-        let testItem2 = {
-            text: "sphere",
-            imageURL: sphereThumbnailImage,
-            applayPropreties: {borderRadius: 0},
-            mesh: icosphere,
-            onClick: ()=>{if(this.selectedObject === icosphere){this.selectedObject = undefined;}else{this.selectedObject = icosphere;}},
-        };
         let items = [];
         items.push(testItem);
-        items.push(testItem2);
 
         this.toolMenuHandle = this.meshUI.createMenu(
             0.04, //height
@@ -174,8 +165,7 @@ class ObjectSpawner {
         snapButton.position.set(0,-0.38,0);
         this.toolMenuHandle.userData.menu.add(snapButton);
         
-        this.toolMenuHandle.position.x = -0.14;
-        this.toolMenuHandle.position.y = 0.05;
+        this.toolMenuHandle.position.set(-0.14,0.05,0);
         this.mesh.userData.UI = this.toolMenuHandle;
         this.mesh.add(this.toolMenuHandle);
         this.mesh.position.set(0.2, 1.5, -1);

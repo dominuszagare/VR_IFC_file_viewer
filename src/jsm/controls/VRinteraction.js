@@ -189,6 +189,7 @@ class VRinteraction {
         hand.userData.connected = true;
         hand.userData.selectCooldown = false;
         hand.userData.squeezeCooldown = false;
+        hand.userData.intersectingGUI = false;
 
         group.add(handModel);
         return hand;
@@ -309,6 +310,7 @@ class VRinteraction {
         controller.userData.grippedObject = undefined;
         controller.userData.pointingAtObject = undefined;
         controller.userData.connected = false;
+        controller.userData.intersectingGUI = false;
 
         //set binds
         controller.addEventListener('connected',()=>{controller.userData.connected = true; controller.visible = true;});
@@ -343,7 +345,7 @@ class VRinteraction {
         if(controller.userData.connected == false){return;}
         controller.userData.squeeze = true;
         this.gripObject(controller);
-        if (this.activeControler == controller) {
+        if (this.activeControler == controller && controller.userData.intersectingGUI) {
             this.meshUI.onSelectAlternative(); //<--preform button alternative function if howering over one
         }
         //switch active controller
@@ -355,14 +357,17 @@ class VRinteraction {
         controller.userData.squeeze = false;
         this.hideHelperItems(controller); //hides relevant items
         this.controlerReleseObject(controller);
+        if (this.activeControler == controller) {
+            this.meshUI.onReleseAlternative(); 
+        }
     }
     selectStartController(controller) {
         if(controller.userData.connected == false){return;}
         controller.userData.select = true;
-        if (controller.userData.grippedObject != undefined) {
+        if (controller.userData.grippedObject != undefined && controller.userData.intersectingGUI == false) {
             this.toolActionOnSelect(controller);
         }
-        if (this.activeControler == controller) {
+        if (this.activeControler == controller && controller.userData.intersectingGUI) {
             this.meshUI.onSelect(); //<--preform button function if howering over one
         }
         //switch active controller
@@ -396,9 +401,13 @@ class VRinteraction {
         if (object != undefined) {
 
             object.userData.returnTo = undefined;
+            object.userData.returnToPosition = undefined;
+            object.userData.returnToRotation = undefined;
             controller.userData.grippedObject = object;
             switch (object.name) {
                 case 'teleporter':
+                    object.userData.returnToPosition = object.position.clone();
+                    object.userData.returnToRotation = object.quaternion.clone();
                     object.userData.returnTo = object.parent; //save parent
                     object.setRotationFromQuaternion(controller.getWorldQuaternion(this.tempQuaternion));
                     this.tempQuaternion.copy(this.userGroup.quaternion);
@@ -408,6 +417,8 @@ class VRinteraction {
                     controller.userData.grippedTool = 0;
                     break;
                 case 'pencil':
+                    object.userData.returnToPosition = object.position.clone();
+                    object.userData.returnToRotation = object.quaternion.clone();
                     object.userData.returnTo = object.parent; //save parent
                     object.setRotationFromQuaternion(controller.getWorldQuaternion(this.tempQuaternion));
                     this.tempQuaternion.copy(this.userGroup.quaternion);
@@ -437,6 +448,8 @@ class VRinteraction {
                     }
                     break;
                 case 'objectSpawner':
+                    object.userData.returnToPosition = object.position.clone();
+                    object.userData.returnToRotation = object.quaternion.clone();
                     object.userData.returnTo = object.parent; //save parent
                     object.setRotationFromQuaternion(controller.getWorldQuaternion(this.tempQuaternion));
                     this.tempQuaternion.copy(this.userGroup.quaternion);
@@ -447,6 +460,8 @@ class VRinteraction {
                     controller.userData.grippedTool = 4;
                     break;
                 case 'objectManipulator':
+                    object.userData.returnToPosition = object.position.clone();
+                    object.userData.returnToRotation = object.quaternion.clone();
                     object.userData.returnTo = object.parent; //save parent
                     object.setRotationFromQuaternion(controller.getWorldQuaternion(this.tempQuaternion));
                     this.tempQuaternion.copy(this.userGroup.quaternion);
@@ -496,7 +511,11 @@ class VRinteraction {
             const object = controller.userData.grippedObject;
             const parent = object.userData.returnTo;
 
-            if(parent)parent.attach(object); //release object back to its parent
+            if(parent){
+                parent.attach(object);
+                object.position.copy(object.userData.returnToPosition);
+                object.quaternion.copy(object.userData.returnToRotation);
+            }//release object back to its parent
             controller.userData.grippedObject = undefined; //clear object
             controller.userData.grippedTool = -1;
 
@@ -572,7 +591,7 @@ class VRinteraction {
     controlerGetObject(controller, higlightedObjects, group) {
         if(controller.userData.connected == false){return;}
         //show that object can be interacted with by changing its collor when its being pointed at
-        if (controller.userData.grippedObject !== undefined) return;
+        //if (controller.userData.grippedObject !== undefined) return;
         const line = controller.getObjectByName('line');
         let found = this.controlerNearby(controller,group);
         
@@ -581,10 +600,13 @@ class VRinteraction {
             this.raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
             this.raycaster.ray.direction.set(0, 0, -1).applyMatrix4(this.tempMatrix);
 
-            this.meshUI.raycastGUIelements(this.raycaster); //check if the raycast hits any gui elements
-
+            let ret = this.meshUI.raycastGUIelements(this.raycaster); //check if the raycast hits any gui elements
+            if(ret){
+                controller.userData.intersectingGUI = true;
+            }else{ controller.userData.intersectingGUI = false;}
 
             found = this.raycaster.intersectObjects(group.children, false); //do not use recursion to check for children of group.children
+            
         }
 
         if (found.length > 0) {
