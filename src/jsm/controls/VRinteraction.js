@@ -30,10 +30,11 @@ import { ObjectManipulator } from './objectManipulator.js';
 
 import interactiveObjectsModels from '../../models/gltf/cursor.glb';
 import { Sphere } from 'three';
+import { InspectTool } from './inspectTool.js';
 
 
 class VRinteraction {
-    constructor(scene, camera, renderer, overlay, MESHUI) {
+    constructor(scene, camera, renderer, overlay, MESHUI, ifc) {
         this.tempVecP = new Vector3(0, 1, 0);
         this.tempVecP2 = new Vector3(0, 0, 0);
         this.tempVecV = new Vector3(0, 0, 0);
@@ -76,8 +77,9 @@ class VRinteraction {
         //contain all pencil tool logic in one place
         this.pencilTool = new PainterTool(scene,this.interactiveObjectsGroup,MESHUI);
         this.teleporterTool = new TeleportTool(this.interactiveObjectsGroup,this.userGroup,this.ModelGroup,overlay,MESHUI,this.groundPlane);
-        this.objectSpawnerTool = new ObjectSpawner(this.ModelGroup,this.interactiveObjectsGroup,scene,MESHUI,this.groundPlane);
-        this.objectManipulatorTool = new ObjectManipulator(this.ModelGroup,this.interactiveObjectsGroup,scene,MESHUI,this.groundPlane);
+        this.objectSpawnerTool = new ObjectSpawner(this.ModelGroup,this.interactiveObjectsGroup,scene,MESHUI,this.groundPlane, overlay);
+        this.objectManipulatorTool = new ObjectManipulator(this.ModelGroup,this.interactiveObjectsGroup,scene,MESHUI,this.groundPlane, overlay);
+        this.inspectTool = new InspectTool(scene,this.interactiveObjectsGroup,this.ModelGroup,MESHUI,ifc,overlay);
         //TODO make a inspect and mesuring tool
 
         this.yojstickToolBase = new Mesh(new BoxGeometry(0.1, 0.1, 0.1), new MeshLambertMaterial({ color: 0x440066 }));
@@ -470,7 +472,17 @@ class VRinteraction {
                     controller.attach(object);
                     controller.userData.grippedTool = 5;
                     break;
-
+                case 'inspectTool':
+                    object.userData.returnToPosition = object.position.clone();
+                    object.userData.returnToRotation = object.quaternion.clone();
+                    object.userData.returnTo = object.parent; //save parent
+                    object.setRotationFromQuaternion(controller.getWorldQuaternion(this.tempQuaternion));
+                    this.tempQuaternion.copy(this.userGroup.quaternion);
+                    object.applyQuaternion(this.tempQuaternion.invert()); //rotate to aling with local cordinates
+                    object.position.copy(controller.position);
+                    controller.attach(object);
+                    controller.userData.grippedTool = 6;
+                    break;
             
                 default:
                     break;
@@ -491,6 +503,9 @@ class VRinteraction {
         if(controller.userData.grippedTool == 5){
             this.objectManipulatorTool.toolShowHelperItems();
         }
+        if(controller.userData.grippedTool == 6){
+            this.inspectTool.toolShowHelperItems();
+        }
     }
     hideHelperItems(controller) {
         if(controller.userData.connected == false){return;}
@@ -503,6 +518,9 @@ class VRinteraction {
         if (controller.userData.grippedTool == 5) {
             this.objectManipulatorTool.toolHideHelperItems();
         }
+        if(controller.userData.grippedTool == 6){
+            this.inspectTool.toolHideHelperItems();
+        }
     }
 
     controlerReleseObject(controller) {
@@ -513,8 +531,8 @@ class VRinteraction {
 
             if(parent){
                 parent.attach(object);
-                object.position.copy(object.userData.returnToPosition);
-                object.quaternion.copy(object.userData.returnToRotation);
+                if(object.userData.returnToPosition)object.position.copy(object.userData.returnToPosition);
+                if(object.userData.returnToRotation)object.quaternion.copy(object.userData.returnToRotation);
             }//release object back to its parent
             controller.userData.grippedObject = undefined; //clear object
             controller.userData.grippedTool = -1;
@@ -538,6 +556,8 @@ class VRinteraction {
             this.objectSpawnerTool.toolAction();
         } else if (controller.userData.grippedTool == 5) {
             this.objectManipulatorTool.toolAction();
+        } else if (controller.userData.grippedTool == 6) {
+            this.inspectTool.toolAction();
         }
     }
     toolActionOnSelectEnd(controller) {
@@ -573,6 +593,8 @@ class VRinteraction {
             this.objectSpawnerTool.toolAnimation(controller);
         } else if (controller.userData.grippedTool == 5) {
             this.objectManipulatorTool.toolAnimation(controller);
+        } else if (controller.userData.grippedTool == 6){
+            this.inspectTool.toolAnimation(controller);
         }
     }
 

@@ -9,11 +9,12 @@ Mesh.prototype.raycast = acceleratedRaycast;
 
 //creates a THREE.Object3D in toolGroup whith object spawning logic atached
 class ObjectSpawner {
-    constructor(ObjectGroup,toolGroup,_scene,MESHUI,groundPlane) {
+    constructor(ObjectGroup,toolGroup,_scene,MESHUI,groundPlane,_overlay) {
         this.mesh = new Mesh(new BoxGeometry(0.05, 0.1, 0.05), new MeshLambertMaterial({ color: 0x660066 }));
         this.meshUI = MESHUI;
         this.objects = ObjectGroup;
         this.scene = _scene;
+        this.overlay = _overlay;
         this.selectedObject = undefined;
         this.raycaster = new Raycaster();
         this.groundPlane = groundPlane //if ray dosent intersect any object, place object on ground
@@ -39,7 +40,7 @@ class ObjectSpawner {
         this.objectBoundingBox = new Mesh(new BoxGeometry(0.1, 0.1, 0.1), new MeshLambertMaterial({ color: 0x0011B6, opacity: 0.2, transparent: true, side: DoubleSide }));
         this.objectModel = new Mesh(new BoxGeometry(0.1, 0.1, 0.1), new MeshLambertMaterial({ color: 0x0011A6, opacity: 0.2, transparent: true, side: DoubleSide }));
         this.scene.add(this.objectModel);
-        this.scene.add(this.objectBoundingBox);
+        this.overlay.add(this.objectBoundingBox);
         this.objectBoundingBox.visible = false;
         this.objectBoundingBox.name = 'boundingBox';
 
@@ -263,7 +264,9 @@ class ObjectSpawner {
         if(this.selectedObject){
             let mesh = this.objectModel.clone();
             let box = this.objectBoundingBox.clone();
-            mesh.attach(box);
+            this.overlay.add(box);
+            box.userData.mesh = mesh;
+            mesh.userData.box = box;
             box.visible = false;
 
             if(mesh.material.emissive){

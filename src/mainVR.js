@@ -33,6 +33,7 @@ import buildingIFCFile from './models/ifc/building.ifc';
 
 import iconImageNewGeom from './images/newGeom.png';
 import iconImageMove from './images/move.png';
+import iconInspect from './images/inspect.png';
 
 /*
 This javascript initialises s scene and controls for usage in virtual reality
@@ -111,7 +112,7 @@ function unfrezeCamera() {
 
 sceneInit(scene); //setup lighting and helper objects
 //setup VR interaction controls
-let VRinter = new VRinteraction(scene, camera, renderer, OverlayScene, meshUI);
+let VRinter = new VRinteraction(scene, camera, renderer, OverlayScene, meshUI, ifc);
 initUI();
 
 let loadingFileIcon = meshUI.addSquareImageButton(0.7,"",downloadIconImage);
@@ -222,31 +223,6 @@ function uploadFile(file) {
 
 }
 
-function highlightIFCByRay(material, model, ifcModels, raycaster, _scene) {
-    const found = raycaster.intersectObjects(ifcModels)[0];
-    if (found) {
-
-        // Gets model ID
-        model.id = found.object.modelID;
-
-        // Gets Express ID
-        const index = found.faceIndex;
-        const geometry = found.object.geometry;
-        const id = ifc.getExpressId(geometry, index);
-
-        // Creates subset
-        ifcLoader.ifcManager.createSubset({
-            modelID: model.id,
-            ids: [id],
-            material: material,
-            scene: _scene,
-            removePrevious: true
-        })
-    } else {
-        // Removes previous highlight
-        ifc.removeSubset(model.id, material);
-    }
-}
 
 function loadIFC(dataURL,name,objectNum,timeout = 100) {
     try {
@@ -399,7 +375,7 @@ function initUI() {
 
     let menu2Handle = meshUI.createMenu(
         0.04, //handle height
-        0.15, //menu height
+        0.32, //menu height
         'OPTIONS',
         false, //is it dragable ?
         false, //does it reoient itself when moved to face ray origin
@@ -475,7 +451,7 @@ function initUI() {
     moveToolHandle.position.set(0.367, 0.28, -0.4); moveToolHandle.visible = false;
     GUI_Group.add(moveToolHandle);
 
-    let toolsHandle = meshUI.createMenu(0.03,0.18,'TOOLS',true,false,false,false);
+    let toolsHandle = meshUI.createMenu(0.03,0.26,'TOOLS',true,false,false,false);
     toolsHandle.position.set(-0.367, 0.29, -0.4); toolsHandle.visible = false; toolsHandle.userData.menu.visible = true;
     toolsHandle.userData.menu.set({width: 0.096}); toolsHandle.userData.menu.position.x = 0;
     GUI_Group.add(toolsHandle);
@@ -509,6 +485,21 @@ function initUI() {
     },true);
     toolButtons.push(objectManipulatorButton); objectManipulatorButton.userData.handle = moveToolHandle;
     toolsHandle.userData.menu.add(objectManipulatorButton);
+
+    
+    let inspectButton = meshUI.addSquareImageButton(0.08,'',iconInspect,()=>{
+        toolButtons.forEach(button => {if(button != inspectButton){button.frame.userData.on = false; button.userData.handle.visible = false; button.setState('idle');}}); //setState to idle
+        if(desktopControlerSpoofer.userData.grippedTool ==  6){
+            controlerSpoofferRelease();
+        }else{
+            controlerSpoofferRelease(); inspectButton.userData.handle.visible = true;
+            desktopControlerSpoofer.userData.pointingAtObject = VRinter.inspectTool.mesh;
+            controlerSpofferGrab();
+
+        }
+    },true);
+    toolButtons.push(inspectButton); inspectButton.userData.handle = VRinter.inspectTool.infoWindow;
+    toolsHandle.userData.menu.add(inspectButton);
 
     OverlayScene.add(GUI_Group);
     //camera.attach(GUI_Group);
@@ -555,14 +546,14 @@ function initUI() {
 function controlerSpoofferRelease(){
     desktopControlerSpoofer.userData.squeeze = false;
     VRinter.hideHelperItems(desktopControlerSpoofer); //hides relevant items
-    if(desktopControlerSpoofer.userData.grippedObject)desktopControlerSpoofer.userData.grippedObject.userData.UI.userData.menu.visible = false;
+    if(desktopControlerSpoofer.userData.grippedObject)if(desktopControlerSpoofer.userData.grippedObject.userData.UI)desktopControlerSpoofer.userData.grippedObject.userData.UI.userData.menu.visible = false;
     VRinter.controlerReleseObject(desktopControlerSpoofer);
 }
 
 function controlerSpofferGrab(){
     desktopControlerSpoofer.userData.squeeze = true;
     VRinter.gripObject(desktopControlerSpoofer);
-    if(desktopControlerSpoofer.userData.grippedObject)desktopControlerSpoofer.userData.grippedObject.userData.UI.userData.menu.visible = true;
+    if(desktopControlerSpoofer.userData.grippedObject)if(desktopControlerSpoofer.userData.grippedObject.userData.UI)desktopControlerSpoofer.userData.grippedObject.userData.UI.userData.menu.visible = true;
 }
 
 

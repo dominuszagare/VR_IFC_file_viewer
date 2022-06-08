@@ -6,7 +6,7 @@ import { acceleratedRaycast } from 'three-mesh-bvh';
 Mesh.prototype.raycast = acceleratedRaycast; 
 
 class ObjectManipulator {
-    constructor(ObjectGroup,toolGroup,_scene,MESHUI,groundPlane) {
+    constructor(ObjectGroup,toolGroup,_scene,MESHUI,groundPlane, _overlay) {
         this.higlightMaterial = new MeshLambertMaterial({ color: 0x00B611, opacity: 0.2, transparent: true, side: DoubleSide });
         this.boundingBoxMaterial =  new MeshLambertMaterial({ color: 0x0011B6, opacity: 0.2, transparent: true, side: DoubleSide });
 
@@ -14,6 +14,7 @@ class ObjectManipulator {
         this.meshUI = MESHUI;
         this.objects = ObjectGroup;
         this.scene = _scene;
+        this.overlay = _overlay;
         this.selectedObject = undefined;
         this.raycaster = new Raycaster();
         this.groundPlane = groundPlane //if ray dosent intersect any object, place object on ground
@@ -153,7 +154,7 @@ class ObjectManipulator {
         this.toolMenuHandle.userData.menu.add(this.selectorRotateStep);
         this.selectorRotateStep.position.set(-0.04*4.2,-0.18,0);
 
-        const confirmButton = this.meshUI.addWideButton('CONFIRM', 0.04, () => {this.objectBoundingBox.visible = false; this.toolAction();});
+        const confirmButton = this.meshUI.addWideButton('CONFIRM', 0.04, () => {if(this.objectBoundingBox)this.objectBoundingBox.visible = false; this.toolAction();});
         confirmButton.autoLayout = false;
         this.toolMenuHandle.userData.menu.add(confirmButton);
         confirmButton.position.set(-0.04*4.2,-0.22,0);
@@ -161,7 +162,7 @@ class ObjectManipulator {
         const deleteButton = this.meshUI.addWideButton('DELETE', 0.04, () => {
             if(this.objectBoundingBox && this.objectModel){
                 this.scene.remove(this.objectModel);
-                this.scene.remove(this.objectBoundingBox);
+                this.overlay.remove(this.objectBoundingBox);
                 this.objectBoundingBox = undefined;
                 this.objectModel = undefined;
                 this.objectSelected = false;
@@ -219,7 +220,7 @@ class ObjectManipulator {
         let boundingBoxes = [];
         this.objects.children.forEach(element => {
             if(this.objectModel != element){
-                let box = element.getObjectByName('boundingBox');
+                let box = element.userData.box;
                 box.visible = true;
                 boundingBoxes.push(box);
             }
@@ -269,21 +270,18 @@ class ObjectManipulator {
             this.objectModel.position.copy(this.position);
             this.objectModel.quaternion.copy(this.quaternion);
 
-            this.scene.attach(this.objectBoundingBox);
             this.box.setFromObject(this.objectModel);
             this.tempVec.copy(this.box.max)
             this.tempVec.add(this.box.min);
             this.tempVec.x *= 0.5; this.tempVec.y *= 0.5; this.tempVec.z *= 0.5;
             this.objectBoundingBox.position.copy(this.tempVec);
             this.objectBoundingBox.scale.set((this.box.max.x - this.box.min.x)*10.1, (this.box.max.y - this.box.min.y)*10.1, (this.box.max.z - this.box.min.z)*10.1);
-            this.objectModel.attach(this.objectBoundingBox);
         }
         this.toolAction();
     }
 
     moveObject(){
         if(this.objectModel && this.objectBoundingBox){
-            this.scene.attach(this.objectBoundingBox);
             
             if(this.holdPosition){
                 this.objectModel.position.copy(this.position);
@@ -317,7 +315,6 @@ class ObjectManipulator {
             this.objectBoundingBox.position.copy(this.tempVec);
             this.objectBoundingBox.scale.set((this.box.max.x - this.box.min.x)*10.1, (this.box.max.y - this.box.min.y)*10.1, (this.box.max.z - this.box.min.z)*10.1);
             if(this.objectBoundingBox.material)this.objectBoundingBox.material = this.higlightMaterial;
-            this.objectModel.attach(this.objectBoundingBox);
         }
     }
 
@@ -326,7 +323,7 @@ class ObjectManipulator {
             this.objectSelected = true;
             this.objectBoundingBox = this.pointedAtObject;
             if(this.objectBoundingBox.material)this.objectBoundingBox.material = this.higlightMaterial;
-            this.objectModel = this.pointedAtObject.parent;
+            this.objectModel = this.pointedAtObject.userData.mesh;
             this.scene.attach(this.objectModel);
             this.pointedAtObject = undefined;
             this.quaternion.copy(this.objectModel.quaternion);
@@ -347,7 +344,7 @@ class ObjectManipulator {
         this.pointedAtObject = undefined;
         this.objects.children.forEach(element => {
             if(this.objectModel != element){
-                let box = element.getObjectByName('boundingBox');
+                let box = element.userData.box;
                 box.visible = false;
             }
         });
