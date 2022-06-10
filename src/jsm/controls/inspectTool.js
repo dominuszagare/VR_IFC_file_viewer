@@ -55,24 +55,29 @@ class InspectTool{
         this.highlightIFCByRay(this.higlightMaterial, this.scene);
 
     }
-    toolAction(){
-        this.raycaster.firstHitOnly = true;
-        let found = this.raycaster.intersectObjects(this.objects.children,false)[0];
-        if (found) {
-            console.log('get info', found);
-
-            this.pivot.position.copy(found.point);
-            if(!found.object.modelID){return;}
-            const ifc = this.ifcManager;
-            const modelID = found.object.id;
-            const index = found.faceIndex;
-            const geometry = found.object.geometry;
-            const id = this.ifcManager.getExpressId(geometry, index);
-            const props = ifc.getItemProperties(modelID, id);
-            const info = JSON.stringify(props, null, 2);
-            console.log(info);
+    async toolAction(){
+        try {
+            this.raycaster.firstHitOnly = true;
+            let found = this.raycaster.intersectObjects(this.objects.children,false)[0];
+            if (found) {
+                //console.log(found, found.object.modelID, );
+                this.pivot.position.copy(found.point);
+                if(!found.object.modelID){return;}
+                
+                const index = found.faceIndex;
+                const geometry = found.object.geometry;
+                const ifc = this.ifcManager;
+                const id = ifc.getExpressId(geometry, index);
+                const modelID = found.object.modelID;
+                console.log('info', id, modelID);
+                const props = await ifc.getItemProperties(modelID, id);
+                const info = JSON.stringify(props, null, 2);
+                console.log(info);
+            }
+            
+        } catch (error) {
+            console.log(error.message);  
         }
-
     }
     toolHideHelperItems(){
 
@@ -87,9 +92,9 @@ class InspectTool{
             if (found) {
                 // Gets model ID
                 this.pivot.position.copy(found.point);
-                if(!found.object.modelID){return;}
-                this.model = found.object;
-                
+                if(found.object.modelID == undefined){return;}
+                this.model = found.object.modelID;
+                const modelID = found.object.modelID;
         
                 // Gets Express ID
                 const index = found.faceIndex;
@@ -99,7 +104,7 @@ class InspectTool{
                 // Creates subset
                 
                 this.ifcManager.createSubset({
-                    modelID: this.model.modelID,
+                    modelID: modelID,
                     ids: [id],
                     material: material,
                     scene: _scene,
@@ -108,7 +113,7 @@ class InspectTool{
                 
             } else if(this.model) {
                 // Removes previous highlight
-                this.ifcManager.removeSubset(this.model.modelID, material);
+                this.ifcManager.removeSubset(this.model, material);
                 this.model = undefined;
             }
             

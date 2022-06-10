@@ -51,7 +51,10 @@ class ObjectSpawner {
             imageURL: cubeThumbnailImage,
             applayPropreties: {borderRadius: 0},
             mesh: cubeMesh,
-            onClick: () => {if(this.selectedObject === cubeMesh){this.selectedObject = undefined;}else{this.selectedObject = cubeMesh;}},
+            onClick: () => {
+                if(this.selectedObject){this.selectedObject.visible = false}
+                if(this.selectedObject === cubeMesh){this.selectedObject = undefined;}else{this.selectedObject = cubeMesh;}
+            },
         };
         let items = [];
         items.push(testItem);
@@ -294,7 +297,7 @@ class ObjectSpawner {
         }
     }
     toolHideHelperItems(){
-        if(!this.hold){
+        if(!this.hold && this.selectedObject){
             this.objectBoundingBox.visible = false;
             this.selectedObject.visible = false;
         }

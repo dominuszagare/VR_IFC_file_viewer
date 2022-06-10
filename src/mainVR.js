@@ -231,7 +231,7 @@ function loadIFC(dataURL,name,objectNum,timeout = 100) {
 
 
             let mesh = ifcModel;
-            console.log(ifcModel);
+            //console.log(ifcModel);
             mesh.visible = false;
             scene.add(mesh);
 
@@ -294,7 +294,10 @@ function loadIFC(dataURL,name,objectNum,timeout = 100) {
                         text: name,
                         imageURL: imgData,
                         applayPropreties: {borderRadius: 0},
-                        onClick: ()=>{if(VRinter.objectSpawnerTool.selectedObject === mesh){VRinter.objectSpawnerTool.selectedObject = undefined;}else{VRinter.objectSpawnerTool.selectedObject = mesh;}},
+                        onClick: ()=>{
+                            if(VRinter.objectSpawnerTool.selectedObject){VRinter.objectSpawnerTool.selectedObject.visible = false}
+                            if(VRinter.objectSpawnerTool.selectedObject === mesh){VRinter.objectSpawnerTool.selectedObject = undefined;}else{VRinter.objectSpawnerTool.selectedObject = mesh;}
+                        },
                     });
                     loadingModel = false;
                 },timeout);
@@ -306,7 +309,10 @@ function loadIFC(dataURL,name,objectNum,timeout = 100) {
                     text: name,
                     imageURL: imgData,
                     applayPropreties: {borderRadius: 0},
-                    onClick: ()=>{if(VRinter.objectSpawnerTool.selectedObject === mesh){VRinter.objectSpawnerTool.selectedObject = undefined;}else{VRinter.objectSpawnerTool.selectedObject = mesh;}},
+                    onClick: ()=>{
+                        if(VRinter.objectSpawnerTool.selectedObject){VRinter.objectSpawnerTool.selectedObject.visible = false}
+                        if(VRinter.objectSpawnerTool.selectedObject === mesh){VRinter.objectSpawnerTool.selectedObject = undefined;}else{VRinter.objectSpawnerTool.selectedObject = mesh;}
+                    },
                 });
             }
     
