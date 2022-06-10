@@ -232,6 +232,8 @@ function loadIFC(dataURL,name,objectNum,timeout = 100) {
 
             let mesh = ifcModel;
             console.log(ifcModel);
+            mesh.visible = false;
+            scene.add(mesh);
 
             if(!(sessionStorage.getItem("recent-file-image-"+objectNum))){
                 //add to scene take a picture of the model and remove it from the scene
@@ -242,7 +244,7 @@ function loadIFC(dataURL,name,objectNum,timeout = 100) {
                 //get object image
                 var width = 300;
                 var height = 300;
-                scene.add(mesh);
+                mesh.visible = true;
                 
                 camera.aspect = width / height;
                 camera.updateProjectionMatrix();
@@ -268,7 +270,7 @@ function loadIFC(dataURL,name,objectNum,timeout = 100) {
                     //saveFile(imgData.replace("image/jpeg", "image/octet-stream"), "test.jpg"); //save file to disk
                     sessionStorage.setItem("recent-file-image-"+objectNum, imgData);
                     
-                    scene.remove(mesh);
+                    mesh.visible = false;
     
                     camera.aspect = window.innerWidth / window.innerHeight;
                     camera.updateProjectionMatrix();

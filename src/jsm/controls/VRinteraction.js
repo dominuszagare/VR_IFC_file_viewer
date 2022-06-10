@@ -198,9 +198,6 @@ class VRinteraction {
     }
 
     checkForHandActions(hand){
-        if(hand.userData.connected == false){
-            return;
-        }
         if(!hand.userData.handModel.joints[ 'index-finger-tip' ]){
             return;
         }
@@ -344,7 +341,6 @@ class VRinteraction {
     }
 
     squeezeStartController(controller) {
-        if(controller.userData.connected == false){return;}
         controller.userData.squeeze = true;
         this.gripObject(controller);
         if (this.activeControler == controller && controller.userData.intersectingGUI) {
@@ -355,7 +351,6 @@ class VRinteraction {
 
     }
     squeezeEndController(controller) {
-        if(controller.userData.connected == false){return;}
         controller.userData.squeeze = false;
         this.hideHelperItems(controller); //hides relevant items
         this.controlerReleseObject(controller);
@@ -364,7 +359,6 @@ class VRinteraction {
         }
     }
     selectStartController(controller) {
-        if(controller.userData.connected == false){return;}
         controller.userData.select = true;
         if (controller.userData.grippedObject != undefined && controller.userData.intersectingGUI == false) {
             this.toolActionOnSelect(controller);
@@ -376,7 +370,6 @@ class VRinteraction {
         this.activeControler = controller;
     }
     selectEndController(controller) {
-        if(controller.userData.connected == false){return;}
         controller.userData.select = false;
         if (this.activeControler == controller) {
             this.meshUI.onRelese();
@@ -387,7 +380,6 @@ class VRinteraction {
     }
 
     onControllerSelectRelease(controller) {
-        if(controller.userData.connected == false){return;}
         //!Cant grab anything outside the interactiveObjectsGroup. So after relese always return it to the interactiveObjectsGroup
         if (controller.userData.grippedObject != undefined) {
             let object = controller.userData.grippedObject;
@@ -396,9 +388,6 @@ class VRinteraction {
     }
     
     gripObject(controller) {
-        //check if object can be grabed
-        //const found = this.ControllerGetObjects(controller,this.interactiveObjectsGroup);
-        if(controller.userData.connected == false){return;}
         let object = controller.userData.pointingAtObject;
         if (object != undefined) {
 
@@ -495,7 +484,6 @@ class VRinteraction {
     }
 
     showHelperItmes(controller) {
-        if(controller.userData.connected == false){return;}
         //glede na oporabljeno orodje prikazi dolocene objekte menije ...
         if (controller.userData.grippedTool == 0) {
             this.teleporterTool.toolShowHelperItems();
@@ -508,7 +496,6 @@ class VRinteraction {
         }
     }
     hideHelperItems(controller) {
-        if(controller.userData.connected == false){return;}
         if (controller.userData.grippedTool == 0) {
             this.teleporterTool.toolHideHelperItems();
         }
@@ -524,7 +511,6 @@ class VRinteraction {
     }
 
     controlerReleseObject(controller) {
-        if(controller.userData.connected == false){return;}
         if (controller.userData.grippedObject !== undefined) {
             const object = controller.userData.grippedObject;
             const parent = object.userData.returnTo;
@@ -546,7 +532,6 @@ class VRinteraction {
     }
     //TODO snap elevation of teleport marker to local geometry and test
     toolActionOnSelect(controller) {
-        if(controller.userData.connected == false){return;}
         //initial action when main button is pressed
         if (controller.userData.grippedTool == 0) {
             this.teleporterTool.toolAction();
@@ -561,13 +546,11 @@ class VRinteraction {
         }
     }
     toolActionOnSelectEnd(controller) {
-        if(controller.userData.connected == false){return;}
         if (controller.userData.grippedTool == 1) { //when finishing a stroke
             this.pencilTool.toolActionEnd();
         }
     }
     handleToolsAnimations(controller) {
-        if(controller.userData.connected == false){return;}
         //will execute each frame (be cerful to not perform expensive operations)
         if (controller.userData.grippedTool == 1 && controller.userData.select) {//when controler triger is pressed and pencil is gripped
             this.pencilTool.toolAction();
@@ -611,9 +594,7 @@ class VRinteraction {
     }
     //shoots a ray from a controler and checks if it intersects any interactive objects also checks if the tip of the controler is touching the object
     controlerGetObject(controller, higlightedObjects, group) {
-        if(controller.userData.connected == false){return;}
         //show that object can be interacted with by changing its collor when its being pointed at
-        //if (controller.userData.grippedObject !== undefined) return;
         const line = controller.getObjectByName('line');
         let found = this.controlerNearby(controller,group);
         
@@ -681,25 +662,6 @@ class VRinteraction {
             this.handleToolsAnimations(this.hand2);
 
         }
-
-        /*
-        const delta = clock.getDelta();
-        let camera = this.camera;
-        if (this.loadingObjectPlaceholder.visible) {
-            this.loadingObjectPlaceholder.rotation.x += delta * 0.5;
-            this.loadingObjectPlaceholder.rotation.y += delta * 0.2;
-            this.tempVecS.set(this.cameraDistance / 30, this.cameraDistance / 30, this.cameraDistance / 30);
-            this.loadingObjectPlaceholder.scale.copy(this.tempVecS);
-        }
-        this.cameraDistance = camera.position.distanceTo(this.obj3Dcursor.position);
-        this.objCursorRing.scale.copy(this.tempVecS);
-        this.objCursor.scale.copy(this.tempVecS);
-        this.objCursor.lookAt(camera.position);
-        this.tempVecS.set(this.cameraDistance / 60, this.cameraDistance / 60, this.cameraDistance / 60);
-        this.obj3Dcursor.scale.copy(this.tempVecS);
-        this.objCursorRing.lookAt(camera.position);
-        */
-
     }
 }
 export { VRinteraction };

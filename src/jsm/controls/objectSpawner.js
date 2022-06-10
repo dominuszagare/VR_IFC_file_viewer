@@ -38,8 +38,8 @@ class ObjectSpawner {
         this.snaping = false;
 
         this.objectBoundingBox = new Mesh(new BoxGeometry(0.1, 0.1, 0.1), new MeshLambertMaterial({ color: 0x0011B6, opacity: 0.2, transparent: true, side: DoubleSide }));
-        this.objectModel = new Mesh(new BoxGeometry(0.1, 0.1, 0.1), new MeshLambertMaterial({ color: 0x0011A6, opacity: 0.2, transparent: true, side: DoubleSide }));
-        this.scene.add(this.objectModel);
+        //this.objectModel = new Mesh(new BoxGeometry(0.1, 0.1, 0.1), new MeshLambertMaterial({ color: 0x0011A6, opacity: 0.2, transparent: true, side: DoubleSide }));
+        //this.scene.add(this.objectModel);
         this.overlay.add(this.objectBoundingBox);
         this.objectBoundingBox.visible = false;
         this.objectBoundingBox.name = 'boundingBox';
@@ -144,7 +144,7 @@ class ObjectSpawner {
             if(this.hold){
                 this.hold = false
                 this.objectBoundingBox.visible = false;
-                this.objectModel.visible = false;
+                this.selectedObject.visible = false;
             }else{this.hold = true}},true);
         this.holdButton.autoLayout = false;
         this.holdButton.position.set(0,-0.30,0);
@@ -153,7 +153,7 @@ class ObjectSpawner {
         const confirmButton = this.meshUI.addWideButton('CONFIRM', 0.04,()=>{
             this.toolAction(); 
             this.objectBoundingBox.visible = false;
-            this.objectModel.visible = false;
+            this.selectedObject.visible = false;
         });
         confirmButton.autoLayout = false;
         confirmButton.position.set(0,-0.34,0);
@@ -214,17 +214,16 @@ class ObjectSpawner {
                 poz.z = Math.round(poz.z / this.moveStep) * this.moveStep;
             } 
             
-            this.objectModel.copy(this.selectedObject);
-            this.objectModel.position.copy(poz);
-            this.objectModel.translateX(this.offsetXtranslate);
-            this.objectModel.translateY(this.offsetYtranslate)
-            this.objectModel.translateZ(this.offsetZtranslate)
+            this.selectedObject.position.copy(poz);
+            this.selectedObject.translateX(this.offsetXtranslate);
+            this.selectedObject.translateY(this.offsetYtranslate)
+            this.selectedObject.translateZ(this.offsetZtranslate)
             //todo check if rotation order is correct
-            this.objectModel.rotateX(this.offsetXrotate*Math.PI/180);
-            this.objectModel.rotateY(this.offsetYrotate*Math.PI/180);
-            this.objectModel.rotateZ(this.offsetZrotate*Math.PI/180);
+            this.selectedObject.rotateX(this.offsetXrotate*Math.PI/180);
+            this.selectedObject.rotateY(this.offsetYrotate*Math.PI/180);
+            this.selectedObject.rotateZ(this.offsetZrotate*Math.PI/180);
 
-            this.box.setFromObject(this.objectModel);
+            this.box.setFromObject(this.selectedObject);
             this.tempVec.copy(this.box.max)
             this.tempVec.add(this.box.min);
             this.tempVec.x *= 0.5; this.tempVec.y *= 0.5; this.tempVec.z *= 0.5;
@@ -232,14 +231,30 @@ class ObjectSpawner {
             this.objectBoundingBox.scale.set((this.box.max.x - this.box.min.x)*10.1, (this.box.max.y - this.box.min.y)*10.1, (this.box.max.z - this.box.min.z)*10.1);
 
             this.objectBoundingBox.visible = true;
-            this.objectModel.visible = true;
+            this.selectedObject.visible = true;
         }else{
-            if(this.objectModel)this.objectModel.visible = false;
+            if(this.selectedObject)this.selectedObject.visible = false;
             if(this.objectBoundingBox)this.objectBoundingBox.visible = false;
         }
     }
 
-    toolAnimation(controller){
+    toolAnimation(controller){        /*
+    const delta = clock.getDelta();
+    let camera = this.camera;
+    if (this.loadingObjectPlaceholder.visible) {
+        this.loadingObjectPlaceholder.rotation.x += delta * 0.5;
+        this.loadingObjectPlaceholder.rotation.y += delta * 0.2;
+        this.tempVecS.set(this.cameraDistance / 30, this.cameraDistance / 30, this.cameraDistance / 30);
+        this.loadingObjectPlaceholder.scale.copy(this.tempVecS);
+    }
+    this.cameraDistance = camera.position.distanceTo(this.obj3Dcursor.position);
+    this.objCursorRing.scale.copy(this.tempVecS);
+    this.objCursor.scale.copy(this.tempVecS);
+    this.objCursor.lookAt(camera.position);
+    this.tempVecS.set(this.cameraDistance / 60, this.cameraDistance / 60, this.cameraDistance / 60);
+    this.obj3Dcursor.scale.copy(this.tempVecS);
+    this.objCursorRing.lookAt(camera.position);
+    */
         if(controller.userData.select){
             this.toolHideHelperItems();
         }else{
@@ -262,7 +277,7 @@ class ObjectSpawner {
     }
     toolAction(){
         if(this.selectedObject){
-            let mesh = this.objectModel.clone();
+            let mesh = this.selectedObject.clone();
             let box = this.objectBoundingBox.clone();
             this.overlay.add(box);
             box.userData.mesh = mesh;
@@ -281,7 +296,7 @@ class ObjectSpawner {
     toolHideHelperItems(){
         if(!this.hold){
             this.objectBoundingBox.visible = false;
-            this.objectModel.visible = false;
+            this.selectedObject.visible = false;
         }
     }
 }

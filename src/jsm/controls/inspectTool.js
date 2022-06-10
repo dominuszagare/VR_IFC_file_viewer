@@ -32,6 +32,8 @@ class InspectTool{
         });
         this.infoWindowText = new ThreeMeshUI.Text({ content: '', offset: 0.001 });
         this.infoWindow.add(this.infoWindowText);
+        this.infoWindow.visible = false;
+        //overlay.add(this.infoWindow);
 
       
         this.mesh.userData.UI = this.toolMenuHandle;
@@ -53,26 +55,24 @@ class InspectTool{
         this.highlightIFCByRay(this.higlightMaterial, this.scene);
 
     }
-    async toolAction(){
+    toolAction(){
         this.raycaster.firstHitOnly = true;
         let found = this.raycaster.intersectObjects(this.objects.children,false)[0];
-        try {
-            if (found) {
-                // Gets model ID
-                this.pivot.position.copy(found.point);
-                if(!found.object.modelID){return;}
-                const modelID = found.object.modelID;
-        
-                // Gets Express ID
-                const index = found.faceIndex;
-                const geometry = found.object.geometry;
-                const id = this.ifcManager.getExpressId(geometry, index);
-                const props = await this.ifcManager.getItemProperties(modelID, id);
-                console.log(JSON.stringify(props, null, 2));
-            }
-        } catch (error) {
-            console.log(error.message);
+        if (found) {
+            console.log('get info', found);
+
+            this.pivot.position.copy(found.point);
+            if(!found.object.modelID){return;}
+            const ifc = this.ifcManager;
+            const modelID = found.object.id;
+            const index = found.faceIndex;
+            const geometry = found.object.geometry;
+            const id = this.ifcManager.getExpressId(geometry, index);
+            const props = ifc.getItemProperties(modelID, id);
+            const info = JSON.stringify(props, null, 2);
+            console.log(info);
         }
+
     }
     toolHideHelperItems(){
 
