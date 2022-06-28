@@ -6,7 +6,7 @@ import { acceleratedRaycast } from 'three-mesh-bvh';
 Mesh.prototype.raycast = acceleratedRaycast; 
 
 class ObjectManipulator {
-    constructor(ObjectGroup,toolGroup,_scene,MESHUI,groundPlane, _overlay) {
+    constructor(ObjectGroup,_scene,MESHUI,groundPlane, _overlay) {
         this.higlightMaterial = new MeshLambertMaterial({ color: 0x00B611, opacity: 0.2, transparent: true, side: DoubleSide });
         this.boundingBoxMaterial =  new MeshLambertMaterial({ color: 0x0011B6, opacity: 0.2, transparent: true, side: DoubleSide });
 
@@ -201,18 +201,15 @@ class ObjectManipulator {
         this.mesh.add(this.toolMenuHandle);
         this.mesh.position.set(1.2, 1.5, -1);
         this.mesh.name = 'objectManipulator';
-        toolGroup.add(this.mesh);
 
         this.objectSelected = false;
-
-        this.line = new Line(new BufferGeometry().setFromPoints([new Vector3(0, 0, 0), new Vector3(0, 0, -1)]));
-        this.line.name = 'line';
-        this.line.scale.z = 1;
-        this.mesh.add(this.line);
+        console.log(this.mesh);
 
     }
 
     toolAnimation(controller){
+        const line = controller.getObjectByName('line');
+
         this.tempMatrix.identity().extractRotation(controller.matrixWorld); //shoot a ray from a controller and find if it intersacts with a interactable object
         this.raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
         this.raycaster.ray.direction.set(0, 0, -1).applyMatrix4(this.tempMatrix);
@@ -246,22 +243,23 @@ class ObjectManipulator {
         }
 
         //BVH method of raycasting-----------------------------------------------------------------------------------------------------------------------------------------------------------------
-        this.raycaster.firstHitOnly = true;
-        found = this.raycaster.intersectObjects(this.objects.children); //if object spawner corectly generated BVH for geometry this should work much faster
-        if(found.length > 0){
-            let intersaction = found[0];
-            this.tempVecP.copy(intersaction.point);
-        }else{
-            this.tempVecP.set(0,50000,0);;
-            this.raycaster.ray.intersectPlane(this.groundPlane, this.tempVecP);
+        if(this.objectModel && this.objectBoundingBox){
+            this.raycaster.firstHitOnly = true;
+            found = this.raycaster.intersectObjects(this.objects.children); //if object spawner corectly generated BVH for geometry this should work much faster
+            if(found.length > 0){
+                let intersaction = found[0];
+                this.tempVecP.copy(intersaction.point);
+            }else{
+                this.tempVecP.set(0,50000,0);;
+                this.raycaster.ray.intersectPlane(this.groundPlane, this.tempVecP);
+            }
+
+            this.ball.visible = true;
+            this.ball.position.copy(this.tempVecP);
+            if(line){line.visible = true; line.scale.z = this.tempVecP.distanceTo(this.raycaster.ray.origin); if(line.scale.z > 40000){line.scale.z = 0.1;}}
+
+            this.moveObject();
         }
-
-        this.ball.visible = true;
-        this.ball.position.copy(this.tempVecP);
-        this.line.visible = true;
-        this.line.scale.z = this.tempVecP.distanceTo(this.raycaster.ray.origin);
-
-        this.moveObject();
         
     }
     cancelAction(){
@@ -339,7 +337,6 @@ class ObjectManipulator {
         }
     }
     toolHideHelperItems(){
-        this.line.visible = false;
         this.ball.visible = false;
         this.pointedAtObject = undefined;
         this.objects.children.forEach(element => {
@@ -351,7 +348,6 @@ class ObjectManipulator {
         //this.cancelAction(); 
     }
     toolShowHelperItems(){
-        this.line.visible = true;
     }
 }
 export{ObjectManipulator};

@@ -112,7 +112,7 @@ function unfrezeCamera() {
 
 sceneInit(scene); //setup lighting and helper objects
 //setup VR interaction controls
-let VRinter = new VRinteraction(scene, camera, renderer, OverlayScene, meshUI, ifc);
+let VRinter = new VRinteraction(scene, camera, renderer, OverlayScene, meshUI, ifc, GUI_Group);
 initUI();
 
 let loadingFileIcon = meshUI.addSquareImageButton(0.7,"",downloadIconImage);
@@ -152,7 +152,8 @@ VRinter.userGroup.add(desktopControlerSpoofer);
 function renderScene(){
     if (!renderer.xr.isPresenting) {
         if(enteredVRmode == true){
-            enteredVRmode = false; if(desktopMode == false){desktopModeButton.frame.userData.OnClick();}
+            enteredVRmode = false; unfrezeCamera(); 
+            if(desktopMode == false){desktopModeButton.frame.userData.OnClick();}
             //reset user position to not break the camera control
             VRinter.userGroup.position.set(0, 0, 0);
         }
@@ -160,7 +161,10 @@ function renderScene(){
         GUI_Group.position.copy(camera.position);
         GUI_Group.quaternion.copy(camera.quaternion);
     }else{
-        if(enteredVRmode == false){enteredVRmode = true; if(desktopMode){desktopModeButton.frame.userData.OnClick();}}
+        if(enteredVRmode == false){
+            enteredVRmode = true; freezeCamera(); 
+            if(desktopMode){desktopModeButton.frame.userData.OnClick();}
+        }
         GUI_Group.visible = false;
         VRinter.animate(clock);
     }
@@ -206,7 +210,7 @@ function handleFiles(files) {
 function uploadFile(file) {
     let name = file.name;
     if( name.slice(name.length - 4) == ".ifc" || name.slice(name.length - 8) == ".ifc.txt"){
-        if(file.size < 5000000){
+        if(file.size < 5000000 || saveModelsToStorage == false){
             let reader = new FileReader()
             reader.readAsDataURL(file)
             reader.onloadend = function() {

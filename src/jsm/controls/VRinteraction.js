@@ -34,7 +34,7 @@ import { InspectTool } from './inspectTool.js';
 
 
 class VRinteraction {
-    constructor(scene, camera, renderer, overlay, MESHUI, ifc) {
+    constructor(scene, camera, renderer, overlay, MESHUI, ifc, guiGroup) {
         this.tempVecP = new Vector3(0, 1, 0);
         this.tempVecP2 = new Vector3(0, 0, 0);
         this.tempVecV = new Vector3(0, 0, 0);
@@ -47,6 +47,8 @@ class VRinteraction {
         this.tempGeometry = new Mesh();
         this.tempBox = new Box3(); //for colision detection
         this.tempDistance = -1;
+        this.prevAngle = 0;
+        this.GUI_Group = guiGroup;
 
         this.groundPlane = new Plane();
         this.groundPlane.setFromNormalAndCoplanarPoint(this.tempVecP, this.tempVecP2);
@@ -75,18 +77,25 @@ class VRinteraction {
         //this.objCursor = new Mesh(new BoxGeometry(0.3, 0.3, 0.3), new MeshLambertMaterial({ color: 0x000fff }));
 
         //contain all pencil tool logic in one place
-        this.pencilTool = new PainterTool(scene,this.interactiveObjectsGroup,MESHUI);
-        this.teleporterTool = new TeleportTool(this.interactiveObjectsGroup,this.userGroup,this.ModelGroup,overlay,MESHUI,this.groundPlane);
-        this.objectSpawnerTool = new ObjectSpawner(this.ModelGroup,this.interactiveObjectsGroup,scene,MESHUI,this.groundPlane, overlay);
-        this.objectManipulatorTool = new ObjectManipulator(this.ModelGroup,this.interactiveObjectsGroup,scene,MESHUI,this.groundPlane, overlay);
-        this.inspectTool = new InspectTool(scene,this.interactiveObjectsGroup,this.ModelGroup,MESHUI,ifc,overlay);
+        this.pencilTool = new PainterTool(scene,this.ModelGroup,MESHUI);
+        this.teleporterTool = new TeleportTool(this.userGroup,this.ModelGroup,overlay,MESHUI,this.groundPlane);
+        this.objectSpawnerTool = new ObjectSpawner(this.ModelGroup,scene,MESHUI,this.groundPlane, overlay);
+        this.objectManipulatorTool = new ObjectManipulator(this.ModelGroup,scene,MESHUI,this.groundPlane, overlay);
+        this.inspectTool = new InspectTool(scene,this.ModelGroup,MESHUI,ifc,overlay,this.GUI_Group,renderer.xr);
+
+        this.interactiveObjectsGroup.add(this.objectSpawnerTool.mesh);
+        this.interactiveObjectsGroup.add(this.inspectTool.mesh);
+        this.interactiveObjectsGroup.add(this.pencilTool.mesh);
+        this.interactiveObjectsGroup.add(this.teleporterTool.mesh);
+        this.interactiveObjectsGroup.add(this.objectManipulatorTool.mesh);
+
         //TODO make a inspect and mesuring tool
 
         this.yojstickToolBase = new Mesh(new BoxGeometry(0.1, 0.1, 0.1), new MeshLambertMaterial({ color: 0x440066 }));
         this.yojstickToolHandle = new Mesh(new BoxGeometry(0.1, 0.1, 0.1), new MeshLambertMaterial({ color: 0x660066 }));
         
         this.yojstickToolBase.name = 'yojstickBase';
-        this.userGroup.add(this.yojstickToolHandle);//handle is not selectable
+        this.interactiveObjectsGroup.add(this.yojstickToolHandle);//handle is not selectable
         this.yojstickToolHandle.position.set(0.2, 0.8, -0.8);
         this.yojstickToolBase.position.set(0.2, 0.8, -0.8);
         this.interactiveObjectsGroup.add(this.yojstickToolBase);
@@ -96,6 +105,8 @@ class VRinteraction {
         this.interactiveObjectsGroup.add(this.yojstickControl);
 
 
+        this.floorMarker = new Mesh(new BoxGeometry(0.1, 0.1, 0.1), new MeshLambertMaterial({ color: 0x888888 }));
+        this.userGroup.add(this.floorMarker);
         this.userHeight = new Vector3(0, 2, 0);
 
         this.XR = renderer.xr;
@@ -136,23 +147,31 @@ class VRinteraction {
         this.userGroup.add(this.interactiveObjectsGroup);
 
         //load complex geometry first define refrences to the objects
-        let teleportTool = this.teleporterTool.mesh;
-        let pencilTool = this.pencilTool.mesh; //get refrence to the pencil tool model
+        let teleportTool = this.teleporterTool.mesh; 
+        let pencilTool = this.pencilTool.mesh; //get refrence to the pencil tool model 4
         let locationMarker = this.teleporterTool.vrLocationMarker;
-        let yojstickToolBase = this.yojstickToolBase;
+        let yojstickToolBase = this.yojstickToolBase; //5
         let yojstickToolHandle = this.yojstickToolHandle;
+        let objectSpawnerMesh = this.objectSpawnerTool.mesh; 
+        let objectManipulatorMesh = this.objectManipulatorTool.mesh; //9
+        let inspectToolMesh = this.inspectTool.mesh;
+        let floormarkerMesh = this.floorMarker;
         //let marker1 = this.obj3Dcursor;
         //let marker2 = this.objCursorRing;
         //let marker3 = this.objCursor;
         this.gltfLoader.load(interactiveObjectsModels,function (gltf) {
-                teleportTool.geometry.copy(gltf.scene.children[4].geometry);
-                pencilTool.geometry.copy(gltf.scene.children[5].geometry);
+                teleportTool.geometry.copy(gltf.scene.children[8].geometry);
+                pencilTool.geometry.copy(gltf.scene.children[4].geometry);
                 locationMarker.geometry.copy(gltf.scene.children[2].geometry);
                 //marker1.geometry.copy(gltf.scene.children[1].geometry);
                 //marker2.geometry.copy(gltf.scene.children[3].geometry);
-                //marker3.geometry.copy(gltf.scene.children[0].geometry);
-                yojstickToolBase.geometry.copy(gltf.scene.children[7].geometry);
+                floormarkerMesh.geometry.copy(gltf.scene.children[3].geometry);
+                yojstickToolBase.geometry.copy(gltf.scene.children[5].geometry);
                 yojstickToolHandle.geometry.copy(gltf.scene.children[6].geometry);
+                objectSpawnerMesh.geometry.copy(gltf.scene.children[7].geometry);
+                objectManipulatorMesh.geometry.copy(gltf.scene.children[9].geometry);
+                inspectToolMesh.geometry.copy(gltf.scene.children[10].geometry);
+
             },
             undefined,
             function (error) {
@@ -164,6 +183,29 @@ class VRinteraction {
         //this.overlay.add(this.obj3Dcursor);
         //this.overlay.add(this.objCursorRing);
         //this.overlay.add(this.objCursor);
+    }
+
+    interactiveObjectGroupMove(clock){
+        this.camera.getWorldDirection(this.tempVecV);
+        this.tempVecV.set(this.tempVecV.x,0,this.tempVecV.z);
+        this.tempVecP2.set(0,1,0)
+        let angle = 0;
+        if(this.tempVecV.z == 0 && this.tempVecV.x > 0){angle = Math.PI*1.5;}
+        else if(this.tempVecV.z == 0 && this.tempVecV.x < 0){angle = Math.PI/2;}
+        else if(this.tempVecV.z < 0 && this.tempVecV.x < 0){angle = Math.atan(this.tempVecV.x/this.tempVecV.z)-Math.PI}
+        else if(this.tempVecV.z > 0 && this.tempVecV.x > 0){angle = Math.atan(this.tempVecV.x/this.tempVecV.z)}
+        else if(this.tempVecV.x == 0 && this.tempVecV.z < 0){angle = Math.PI}
+        else if(this.tempVecV.z > 0 && this.tempVecV.x < 0){angle = Math.atan(this.tempVecV.z/(this.tempVecV.x*-1))-Math.PI/2}
+        else if(this.tempVecV.z < 0 && this.tempVecV.x > 0){angle = Math.atan((this.tempVecV.z*-1)/this.tempVecV.x)+Math.PI/2}
+        angle += Math.PI;
+        if(this.prevAngle > angle + Math.PI/4 || this.prevAngle < angle - Math.PI/4){
+            this.prevAngle = angle;
+            this.interactiveObjectsGroup.setRotationFromAxisAngle(this.tempVecP2,angle);
+        }
+        //if(this.tempPoz1.x > this.camera.position.x + 0.4 || this.tempPoz1.x < this.camera.position.x - 0.4 || this.tempPoz1.z > this.camera.position.z + 0.4 || this.tempPoz1.z < this.camera.position.z - 0.4){
+        //    this.tempPoz1.x = this.camera.position.x; this.tempPoz1.z = this.camera.position.z;
+        //    this.interactiveObjectsGroup.position.copy(this.tempPoz1);
+        //}
     }
 
 
@@ -400,22 +442,18 @@ class VRinteraction {
                     object.userData.returnToPosition = object.position.clone();
                     object.userData.returnToRotation = object.quaternion.clone();
                     object.userData.returnTo = object.parent; //save parent
-                    object.setRotationFromQuaternion(controller.getWorldQuaternion(this.tempQuaternion));
-                    this.tempQuaternion.copy(this.userGroup.quaternion);
-                    object.applyQuaternion(this.tempQuaternion.invert()); //rotate to aling with local cordinates
-                    object.position.copy(controller.position);
+  
                     controller.attach(object);
+                    object.position.set(0,0,0); object.quaternion.set(0,0,0,1);
                     controller.userData.grippedTool = 0;
                     break;
                 case 'pencil':
                     object.userData.returnToPosition = object.position.clone();
                     object.userData.returnToRotation = object.quaternion.clone();
                     object.userData.returnTo = object.parent; //save parent
-                    object.setRotationFromQuaternion(controller.getWorldQuaternion(this.tempQuaternion));
-                    this.tempQuaternion.copy(this.userGroup.quaternion);
-                    object.applyQuaternion(this.tempQuaternion.invert()); //rotate to aling with local cordinates
-                    object.position.copy(controller.position);
+
                     controller.attach(object);
+                    object.position.set(0,0,0); object.quaternion.set(0,0,0,1);
                     controller.userData.grippedTool = 1;
                     break;
                 case 'yojstickBase':
@@ -442,34 +480,27 @@ class VRinteraction {
                     object.userData.returnToPosition = object.position.clone();
                     object.userData.returnToRotation = object.quaternion.clone();
                     object.userData.returnTo = object.parent; //save parent
-                    object.setRotationFromQuaternion(controller.getWorldQuaternion(this.tempQuaternion));
-                    this.tempQuaternion.copy(this.userGroup.quaternion);
-                    object.applyQuaternion(this.tempQuaternion.invert()); //rotate to aling with local cordinates
-                    object.position.copy(controller.position);
                     
                     controller.attach(object);
+                    object.position.set(0,0,0); object.quaternion.set(0,0,0,1);
                     controller.userData.grippedTool = 4;
                     break;
                 case 'objectManipulator':
                     object.userData.returnToPosition = object.position.clone();
                     object.userData.returnToRotation = object.quaternion.clone();
                     object.userData.returnTo = object.parent; //save parent
-                    object.setRotationFromQuaternion(controller.getWorldQuaternion(this.tempQuaternion));
-                    this.tempQuaternion.copy(this.userGroup.quaternion);
-                    object.applyQuaternion(this.tempQuaternion.invert()); //rotate to aling with local cordinates
-                    object.position.copy(controller.position);
+
                     controller.attach(object);
+                    object.position.set(0,0,0); object.quaternion.set(0,0,0,1);
                     controller.userData.grippedTool = 5;
                     break;
                 case 'inspectTool':
                     object.userData.returnToPosition = object.position.clone();
                     object.userData.returnToRotation = object.quaternion.clone();
                     object.userData.returnTo = object.parent; //save parent
-                    object.setRotationFromQuaternion(controller.getWorldQuaternion(this.tempQuaternion));
-                    this.tempQuaternion.copy(this.userGroup.quaternion);
-                    object.applyQuaternion(this.tempQuaternion.invert()); //rotate to aling with local cordinates
-                    object.position.copy(controller.position);
+                    
                     controller.attach(object);
+                    object.position.set(0,0,0); object.quaternion.set(0,0,0,1);
                     controller.userData.grippedTool = 6;
                     break;
             
@@ -541,23 +572,22 @@ class VRinteraction {
             this.objectSpawnerTool.toolAction();
         } else if (controller.userData.grippedTool == 5) {
             this.objectManipulatorTool.toolAction();
-        } else if (controller.userData.grippedTool == 6) {
-            this.inspectTool.toolAction();
         }
     }
     toolActionOnSelectEnd(controller) {
         if (controller.userData.grippedTool == 1) { //when finishing a stroke
             this.pencilTool.toolActionEnd();
+        }else if (controller.userData.grippedTool == 6) {
+            this.inspectTool.toolAction();
         }
     }
     handleToolsAnimations(controller) {
         //will execute each frame (be cerful to not perform expensive operations)
         if (controller.userData.grippedTool == 1 && controller.userData.select) {//when controler triger is pressed and pencil is gripped
-            this.pencilTool.toolAction();
+            this.pencilTool.toolAnimation(controller);
         } else if (controller.userData.grippedTool == 0) { //when griping teleporter recalculate the arc
             this.teleporterTool.toolAnimation(controller);
-        }
-        else if(controller.userData.grippedTool === 3){//when griping yojstick control
+        } else if(controller.userData.grippedTool === 3){//when griping yojstick control
             //if distance is to large release the object
             controller.getWorldPosition(this.tempVecP);
             this.yojstickToolBase.getWorldPosition(this.tempVecP2);
@@ -605,10 +635,11 @@ class VRinteraction {
 
             let ret = this.meshUI.raycastGUIelements(this.raycaster); //check if the raycast hits any gui elements
             if(ret){
+                if(line)line.scale.z = ret;
                 controller.userData.intersectingGUI = true;
-            }else{ controller.userData.intersectingGUI = false;}
+            }else{ controller.userData.intersectingGUI = false; if(line)line.scale.z = 0.1;}
 
-            found = this.raycaster.intersectObjects(group.children, false); //do not use recursion to check for children of group.children
+            if(controller.userData.grippedTool == -1){found = this.raycaster.intersectObjects(group.children, false);} //do not use recursion to check for children of group.children
             
         }
 
@@ -619,6 +650,7 @@ class VRinteraction {
             controller.userData.pointingAtObject = object;
             if(object.material.emissive){
                 object.material.emissive.r = 1; //TODO change to a method that gives objects a white contur 
+                object.scale.set(1.2,1.2,1.2);
                 higlightedObjects.push(object);
             }
             if(line)line.scale.z = intersection.distance;
@@ -641,12 +673,16 @@ class VRinteraction {
             const object = higlightedObjects.pop();
             object.material.emissive.r = 0;
             object.material.emissive.b = 0;
+            object.scale.set(1,1,1);
         }
     }
 
     animate(clock) {
 
         if (this.renderer.xr.isPresenting) {
+
+            this.interactiveObjectGroupMove(clock);
+
             this.cleanHiglighted(this.higlightedObjects);
             this.controlerGetObject(this.controller1, this.higlightedObjects, this.interactiveObjectsGroup);
             this.controlerGetObject(this.controller2, this.higlightedObjects, this.interactiveObjectsGroup);

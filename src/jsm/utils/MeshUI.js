@@ -478,7 +478,7 @@ class MeshUI {
 
                 const ui = raycaster.intersectObjects(visibleGUIelements, false);
                 if (ui.length > 0) {
-                    ret = true;
+                    ret = ui[0].distance;
                     this.RayPoz.copy(raycaster.ray.origin);
                     let object = ui[0].object;
                     this.point.position.copy(ui[0].point);

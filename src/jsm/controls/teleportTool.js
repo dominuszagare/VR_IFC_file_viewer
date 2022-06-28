@@ -4,7 +4,7 @@ import { Vector3,
     Line, BufferGeometry,
     BufferAttribute, Matrix4, Quaternion,
     Mesh, MeshLambertMaterial,LineBasicMaterial,
-    AdditiveBlending,
+    AdditiveBlending,DoubleSide,
 } from "three";
 
 import { acceleratedRaycast } from 'three-mesh-bvh';
@@ -16,7 +16,7 @@ Mesh.prototype.raycast = acceleratedRaycast;
 
 //contains all objects and logic for the teleport tool
 class TeleportTool {
-    constructor(toolGroup,_userGroup,ObjectGroup,_scene,MESHUI,groundPlane) {
+    constructor(_userGroup,ObjectGroup,_scene,MESHUI,groundPlane) {
         this.mesh = new Mesh(new BoxGeometry(0.2, 0.2, 0.2), new MeshLambertMaterial({ color: 0x228866 }));;
         this.meshUI = MESHUI;
         this.objects = ObjectGroup; //group of objects to teleport on to
@@ -38,7 +38,7 @@ class TeleportTool {
 
         this.scene = _scene;
 
-        this.vrLocationMarker = new Mesh(new BoxGeometry(0.4, 1.6, 0.4), new MeshLambertMaterial({ color: 0x000fff }));
+        this.vrLocationMarker = new Mesh(new BoxGeometry(0.4, 1.6, 0.4), new MeshLambertMaterial({ color: 0x000fff, opacity: 0.2, transparent: true, side: DoubleSide}));
         this.userGroup = _userGroup;
         this.scene.add(this.vrLocationMarker);
 
@@ -49,7 +49,6 @@ class TeleportTool {
 
         this.mesh.position.set(0.8, 1.5, -1);
         this.mesh.name = 'teleporter';
-        toolGroup.add(this.mesh);
 
         //set guidline for teleportation
         this.lineSegments = 10; //make shure the number mathches (x+10)*3

@@ -1,5 +1,5 @@
 import { TubePainter } from "../utils/TubePainter.js";
-import { Group, IcosahedronGeometry, Vector3, Mesh, BoxGeometry, MeshLambertMaterial} from "three";
+import { Group, IcosahedronGeometry, Vector3, Mesh, BoxGeometry, MeshLambertMaterial, Matrix4, Raycaster} from "three";
 
 import yellowIconImage from "../../images/yellow.png"
 import blueIconImage from "../../images/blue.png"
@@ -8,9 +8,15 @@ import redIconImage from "../../images/red.png"
 import whiteIconImage from "../../images/white.png"
 
 
+import { acceleratedRaycast } from 'three-mesh-bvh';
+// Add the raycast function. Assumes the BVH is available on
+// the `boundsTree` variable
+Mesh.prototype.raycast = acceleratedRaycast; 
+
 class PainterTool{
     //give the tool a mesh to use
-    constructor(_scene, toolGroup, MESHUI){
+    constructor(_scene, objects, MESHUI){
+        this.objects = objects;
         this.meshUI = MESHUI;
         this.mesh = new Mesh(new BoxGeometry(0.05, 0.2, 0.05), new MeshLambertMaterial({ color: 0x888888 }))
         this.scene = _scene;
@@ -20,11 +26,15 @@ class PainterTool{
         this.painterStrokes = [];
         this.strokeNum = 0;
         this.tempVec = new Vector3();
+        this.tempMatrix = new Matrix4();
+        this.raycaster = new Raycaster();
         this.painter = new TubePainter();
 
         this.selectedItem = undefined;
         this.selectedColor = 0xffffff;
         this.painterSize = 0.1;
+        this.laser = true;
+        this.newStroke = true;
 
         let items = [];
         items.push({
@@ -90,9 +100,8 @@ class PainterTool{
         this.mesh.name = 'pencil';
         this.pivot = new Mesh(new IcosahedronGeometry(0.01, 3));
         this.pivot.name = 'pivot';
-        this.pivot.position.z = -0.05;
+        this.pivot.position.set(0,0,-0.05);
         this.mesh.add(this.pivot);
-        toolGroup.add(this.mesh);
         this.scene.add(this.painter.mesh);
         this.scene.add(this.painterStrokesGroup);
         
@@ -114,10 +123,30 @@ class PainterTool{
         this.toolActionEnd();
 
     }
-    toolAction(){
-        this.tempVec.setFromMatrixPosition(this.pivot.matrixWorld);
-        this.painter.lineTo(this.tempVec);
-        this.painter.update();
+    toolAnimation(controller){
+        if(this.laser){
+            const line = controller.getObjectByName('line');
+            this.tempMatrix.identity().extractRotation(controller.matrixWorld); //shoot a ray from a controller and find if it intersacts with a interactable object
+            this.raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
+            this.raycaster.ray.direction.set(0, 0, -1).applyMatrix4(this.tempMatrix);
+
+            this.raycaster.firstHitOnly = true;
+            let found = this.raycaster.intersectObjects(this.objects.children,false);
+            if(found.length > 0){
+                if(this.newStroke == true){this.painter.moveTo(found[0].point);this.newStroke = false;}
+                if(line){line.visible = true; line.scale.z = found[0].distance}
+                this.painter.lineTo(found[0].point);
+                this.painter.update();
+
+            }else{ //if ray stops intersecting end the stroke
+                if(this.newStroke == false){this.toolActionEnd();}
+                if(line){line.scale.z = 0.1};
+            }
+        }else{
+            this.tempVec.setFromMatrixPosition(this.pivot.matrixWorld);
+            this.painter.lineTo(this.tempVec);
+            this.painter.update();
+        }
     }
     toolActionEnd(){
         //TODO limit the number of strokes
@@ -142,6 +171,8 @@ class PainterTool{
         this.tempVec.setFromMatrixPosition(this.pivot.matrixWorld);
         this.painter.moveTo(this.tempVec);
         this.scene.add(this.painter.mesh);
+        this.pivot.position.set(0,0,-0.05);
+        this.newStroke = true;
         
 
     }

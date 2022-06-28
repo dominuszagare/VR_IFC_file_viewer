@@ -1,4 +1,4 @@
-import { Vector3, IcosahedronGeometry, Raycaster, Line, BufferGeometry, Matrix4, Mesh, BoxGeometry,MeshLambertMaterial,Box3, DoubleSide } from "three";
+import { Vector3, IcosahedronGeometry, Raycaster, Quaternion, Matrix4, Mesh, BoxGeometry,MeshLambertMaterial,Box3, DoubleSide } from "three";
 
 import cubeThumbnailImage from "../../images/cubeThumbnail.jpg"
 
@@ -9,7 +9,7 @@ Mesh.prototype.raycast = acceleratedRaycast;
 
 //creates a THREE.Object3D in toolGroup whith object spawning logic atached
 class ObjectSpawner {
-    constructor(ObjectGroup,toolGroup,_scene,MESHUI,groundPlane,_overlay) {
+    constructor(ObjectGroup,_scene,MESHUI,groundPlane,_overlay) {
         this.mesh = new Mesh(new BoxGeometry(0.05, 0.1, 0.05), new MeshLambertMaterial({ color: 0x660066 }));
         this.meshUI = MESHUI;
         this.objects = ObjectGroup;
@@ -22,6 +22,7 @@ class ObjectSpawner {
         this.tempVec = new Vector3(0, 1, 0);
         this.tempVecP = new Vector3(0, 50000, 0);
         this.box = new Box3();
+        this.quaternion = new Quaternion();
 
         this.frameCount = 0;
         this.offsetXtranslate = 0;
@@ -174,7 +175,6 @@ class ObjectSpawner {
         this.mesh.add(this.toolMenuHandle);
         this.mesh.position.set(0.2, 1.5, -1);
         this.mesh.name = 'objectSpawner';
-        toolGroup.add(this.mesh);
 
         const resetTranslationRotation = this.meshUI.addWideButton('RESET TO 0', 0.04, () => {
             this.offsetXtranslate = 0;
@@ -195,10 +195,6 @@ class ObjectSpawner {
         this.toolMenuHandle.userData.menu.add(resetTranslationRotation);
         resetTranslationRotation.position.set(-0.04*4.2,-0.38,0);
 
-
-        let line = new Line(new BufferGeometry().setFromPoints([new Vector3(0, 0, 0), new Vector3(0, 0, -1)]));
-        line.name = 'line';
-        line.scale.z = 1;
     }
 
     addItem(item){
@@ -222,6 +218,7 @@ class ObjectSpawner {
             this.selectedObject.translateY(this.offsetYtranslate)
             this.selectedObject.translateZ(this.offsetZtranslate)
             //todo check if rotation order is correct
+            this.selectedObject.quaternion.set(0,0,0,1)
             this.selectedObject.rotateX(this.offsetXrotate*Math.PI/180);
             this.selectedObject.rotateY(this.offsetYrotate*Math.PI/180);
             this.selectedObject.rotateZ(this.offsetZrotate*Math.PI/180);
@@ -258,6 +255,7 @@ class ObjectSpawner {
     this.obj3Dcursor.scale.copy(this.tempVecS);
     this.objCursorRing.lookAt(camera.position);
     */
+        const line = controller.getObjectByName('line');
         if(controller.userData.select){
             this.toolHideHelperItems();
         }else{
@@ -270,6 +268,7 @@ class ObjectSpawner {
             let found = this.raycaster.intersectObjects(this.objects.children); //if object spawner corectly generated BVH for geometry this should work much faster
             if(found.length > 0){
                 let intersaction = found[0];
+                if(line){line.visible = true; line.scale.z = intersaction.distance}
                 this.tempVecP.copy(intersaction.point);
             }else{
                 this.tempVecP.set(0,50000,0);;
@@ -285,6 +284,7 @@ class ObjectSpawner {
             this.overlay.add(box);
             box.userData.mesh = mesh;
             mesh.userData.box = box;
+            mesh.userData.original = this.selectedObject;
             box.visible = false;
 
             if(mesh.material.emissive){
